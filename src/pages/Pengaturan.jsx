@@ -73,11 +73,12 @@ export default function Pengaturan({ services, setServices, settings, setSetting
       confirmButtonColor: '#ef4444',
       cancelButtonColor: '#64748b',
       confirmButtonText: 'Ya, Hapus!',
-      cancelButtonText: 'Batal'
+      cancelButtonText: 'Batal',
+      showCloseButton: true
     }).then((result) => {
       if (result.isConfirmed) {
         handleDelete(id);
-        Swal.fire({ title: 'Terhapus!', text: 'Layanan berhasil dihapus.', icon: 'success', confirmButtonColor: '#16a34a' });
+        Swal.fire({ title: 'Terhapus!', text: 'Layanan berhasil dihapus.', icon: 'success', confirmButtonColor: '#16a34a', showCloseButton: true });
       }
     });
   };

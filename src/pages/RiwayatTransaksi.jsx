@@ -51,11 +51,12 @@ export default function RiwayatTransaksi({ transactions, setTransactions, servic
       confirmButtonColor: '#ef4444',
       cancelButtonColor: '#64748b',
       confirmButtonText: 'Ya, Hapus!',
-      cancelButtonText: 'Batal'
+      cancelButtonText: 'Batal',
+      showCloseButton: true
     }).then((result) => {
       if (result.isConfirmed) {
         handleDelete(id);
-        Swal.fire({ title: 'Terhapus!', text: 'Transaksi berhasil dihapus.', icon: 'success', confirmButtonColor: '#16a34a' });
+        Swal.fire({ title: 'Terhapus!', text: 'Transaksi berhasil dihapus.', icon: 'success', confirmButtonColor: '#16a34a', showCloseButton: true });
       }
     });
   };

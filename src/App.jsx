@@ -48,9 +48,9 @@ export default function App() {
       if (data.pos_customers) setCustomers(data.pos_customers);
       if (data.pos_services) setServices(data.pos_services);
       if (data.pos_settings) setSettings(data.pos_settings);
-      Swal.fire({ icon: 'success', title: 'Berhasil', text: 'Data berhasil direstore!' });
+      Swal.fire({ icon: 'success', title: 'Berhasil', text: 'Data berhasil direstore!', showCloseButton: true });
     } catch (err) {
-      Swal.fire({ icon: 'error', title: 'Gagal', text: 'File tidak valid! Pastikan file JSON yang diekspor dari sistem ini.' });
+      Swal.fire({ icon: 'error', title: 'Gagal', text: 'File tidak valid! Pastikan file JSON yang diekspor dari sistem ini.', showCloseButton: true });
     }
     e.target.value = '';
   };

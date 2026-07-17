@@ -67,12 +67,12 @@ export default function TransaksiBaru({
   /* ── save ── */
   const handleSave = useCallback(() => {
     if (!pelangganNama.trim()) { 
-      Swal.fire({ icon: 'warning', title: 'Perhatian', text: 'Nama pelanggan harus diisi' });
+      Swal.fire({ icon: 'warning', title: 'Perhatian', text: 'Nama pelanggan harus diisi', showCloseButton: true });
       return; 
     }
     const validItems = calc.computedItems.filter((i) => i.layanan && i.berat > 0);
     if (!validItems.length) { 
-      Swal.fire({ icon: 'warning', title: 'Perhatian', text: 'Pilih layanan dan masukkan berat terlebih dahulu' });
+      Swal.fire({ icon: 'warning', title: 'Perhatian', text: 'Pilih layanan dan masukkan berat terlebih dahulu', showCloseButton: true });
       return; 
     }
 
@@ -84,7 +84,8 @@ export default function TransaksiBaru({
       confirmButtonColor: '#2563eb',
       cancelButtonColor: '#ef4444',
       confirmButtonText: 'Iya, Simpan',
-      cancelButtonText: 'Batal'
+      cancelButtonText: 'Batal',
+      showCloseButton: true
     }).then((result) => {
       if (result.isConfirmed) {
         const tx = {
@@ -135,7 +136,8 @@ export default function TransaksiBaru({
           allowOutsideClick: false,
           showCancelButton: true,
           cancelButtonText: '<span style="display:inline-flex;align-items:center;gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> Tutup</span>',
-          cancelButtonColor: '#64748b'
+          cancelButtonColor: '#64748b',
+          showCloseButton: true
         }).then((res) => {
           if (res.isConfirmed) {
             setTimeout(() => window.print(), 150);
