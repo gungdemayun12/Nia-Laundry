@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { DEFAULT_SERVICES, DEFAULT_SETTINGS } from './utils/constants';
 import { exportJSON, importJSON } from './utils/helpers';
+import Swal from 'sweetalert2';
 
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
@@ -47,9 +48,9 @@ export default function App() {
       if (data.pos_customers) setCustomers(data.pos_customers);
       if (data.pos_services) setServices(data.pos_services);
       if (data.pos_settings) setSettings(data.pos_settings);
-      alert('Data berhasil direstore!');
+      Swal.fire({ icon: 'success', title: 'Berhasil', text: 'Data berhasil direstore!' });
     } catch (err) {
-      alert('File tidak valid! Pastikan file JSON yang diekspor dari sistem ini.');
+      Swal.fire({ icon: 'error', title: 'Gagal', text: 'File tidak valid! Pastikan file JSON yang diekspor dari sistem ini.' });
     }
     e.target.value = '';
   };

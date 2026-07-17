@@ -53,24 +53,3 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = '48
   );
 }
 
-export function ConfirmModal({ isOpen, onClose, onConfirm, title, message }) {
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} title={title} maxWidth="400px">
-      <p style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 20 }}>
-        {message}
-      </p>
-      <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-        <button className="btn btn-secondary" onClick={onClose} style={{ padding: '8px 18px' }}>
-          Batal
-        </button>
-        <button
-          className="btn btn-danger"
-          onClick={() => { onConfirm(); onClose(); }}
-          style={{ padding: '8px 18px' }}
-        >
-          Hapus
-        </button>
-      </div>
-    </Modal>
-  );
-}

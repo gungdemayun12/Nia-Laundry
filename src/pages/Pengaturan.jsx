@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { PlusCircle, Edit3, Trash2, Save, Store, Database, Tag } from 'lucide-react';
 import { Input } from '../components/UI';
-import { ConfirmModal } from '../components/Modal';
+import Swal from 'sweetalert2';
 import Modal from '../components/Modal';
 import { formatRupiah, generateId } from '../utils/helpers';
 
@@ -40,7 +40,6 @@ export default function Pengaturan({ services, setServices, settings, setSetting
   const [showModal,     setShowModal]     = useState(false);
   const [serviceName,   setServiceName]   = useState('');
   const [servicePrice,  setServicePrice]  = useState('');
-  const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [storeForm,     setStoreForm]     = useState({ ...settings });
   const [saved,         setSaved]         = useState(false);
 
@@ -63,7 +62,25 @@ export default function Pengaturan({ services, setServices, settings, setSetting
 
   const openEdit = (s) => { setEditService(s); setServiceName(s.nama); setServicePrice(String(s.hargaPerKg)); setShowModal(true); };
   const openNew  = () =>  { setEditService(null); setServiceName(''); setServicePrice(''); setShowModal(true); };
-  const handleDelete = (id) => { setServices((p) => p.filter((s) => s.id !== id)); setDeleteConfirm(null); };
+  const handleDelete = (id) => { setServices((p) => p.filter((s) => s.id !== id)); };
+
+  const handleDeleteClick = (id) => {
+    Swal.fire({
+      title: 'Hapus Layanan?',
+      text: 'Layanan ini akan dihapus permanen. Riwayat transaksi yang sudah ada tidak terpengaruh.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Ya, Hapus!',
+      cancelButtonText: 'Batal'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        handleDelete(id);
+        Swal.fire({ title: 'Terhapus!', text: 'Layanan berhasil dihapus.', icon: 'success', confirmButtonColor: '#16a34a' });
+      }
+    });
+  };
 
   /* ── tiny icon btn ── */
   const IconBtn = ({ onClick, color, hoverBg, children, title }) => (
@@ -128,7 +145,7 @@ export default function Pengaturan({ services, setServices, settings, setSetting
                   <IconBtn onClick={() => openEdit(s)} color="var(--blue)" hoverBg="var(--blue-bg)" title="Edit">
                     <Edit3 size={14} />
                   </IconBtn>
-                  <IconBtn onClick={() => setDeleteConfirm(s.id)} color="var(--red)" hoverBg="var(--red-bg)" title="Hapus">
+                  <IconBtn onClick={() => handleDeleteClick(s.id)} color="var(--red)" hoverBg="var(--red-bg)" title="Hapus">
                     <Trash2 size={14} />
                   </IconBtn>
                 </div>
@@ -270,15 +287,6 @@ export default function Pengaturan({ services, setServices, settings, setSetting
           </div>
         </div>
       </Modal>
-
-      {/* ── Delete Confirm ── */}
-      <ConfirmModal
-        isOpen={!!deleteConfirm}
-        onClose={() => setDeleteConfirm(null)}
-        onConfirm={() => handleDelete(deleteConfirm)}
-        title="Hapus Layanan?"
-        message="Layanan ini akan dihapus permanen. Riwayat transaksi yang sudah ada tidak terpengaruh."
-      />
 
       <style>{`
         @media (max-width: 560px) { .store-grid { grid-template-columns: 1fr !important; } }

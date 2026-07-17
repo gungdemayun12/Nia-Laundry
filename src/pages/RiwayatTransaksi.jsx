@@ -1,7 +1,7 @@
 import { useState, useRef, useMemo } from 'react';
 import { Search, Printer, Edit3, Trash2, Download, X, ChevronRight } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { StatusBadge } from '../components/UI';
-import { ConfirmModal } from '../components/Modal';
 import Modal from '../components/Modal';
 import PrintReceipt, { ReceiptPreview } from '../components/PrintReceipt';
 import { formatRupiah, formatDateTime, formatDate, exportCSV } from '../utils/helpers';
@@ -13,7 +13,6 @@ export default function RiwayatTransaksi({ transactions, setTransactions, servic
   const [filterDate,    setFilterDate]    = useState('');
   const [selectedTx,    setSelectedTx]    = useState(null);
   const [showReceipt,   setShowReceipt]   = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [editTx,        setEditTx]        = useState(null);
   const [editStatus,    setEditStatus]    = useState('');
 
@@ -41,7 +40,24 @@ export default function RiwayatTransaksi({ transactions, setTransactions, servic
 
   const handleDelete = (id) => {
     setTransactions((prev) => prev.filter((t) => t.id !== id));
-    setDeleteConfirm(null);
+  };
+
+  const handleDeleteClick = (id) => {
+    Swal.fire({
+      title: 'Hapus Transaksi?',
+      text: `Transaksi ${id} akan dihapus secara permanen. Data yang sudah dihapus tidak bisa dikembalikan.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#64748b',
+      confirmButtonText: 'Ya, Hapus!',
+      cancelButtonText: 'Batal'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        handleDelete(id);
+        Swal.fire({ title: 'Terhapus!', text: 'Transaksi berhasil dihapus.', icon: 'success', confirmButtonColor: '#16a34a' });
+      }
+    });
   };
 
   const handlePrintReceipt = (tx) => {
@@ -220,7 +236,7 @@ export default function RiwayatTransaksi({ transactions, setTransactions, servic
                         <ActionBtn onClick={() => { setEditTx(t); setEditStatus(t.status); }} title="Edit Status" color="var(--blue)" hoverBg="var(--blue-bg)">
                           <Edit3 size={14} />
                         </ActionBtn>
-                        <ActionBtn onClick={() => setDeleteConfirm(t.id)} title="Hapus" color="var(--red)" hoverBg="var(--red-bg)">
+                        <ActionBtn onClick={() => handleDeleteClick(t.id)} title="Hapus" color="var(--red)" hoverBg="var(--red-bg)">
                           <Trash2 size={14} />
                         </ActionBtn>
                       </div>
@@ -295,14 +311,6 @@ export default function RiwayatTransaksi({ transactions, setTransactions, servic
         </div>
       </Modal>
 
-      {/* ── Delete Confirm ── */}
-      <ConfirmModal
-        isOpen={!!deleteConfirm}
-        onClose={() => setDeleteConfirm(null)}
-        onConfirm={() => handleDelete(deleteConfirm)}
-        title="Hapus Transaksi?"
-        message={`Transaksi ${deleteConfirm} akan dihapus secara permanen. Data yang sudah dihapus tidak bisa dikembalikan.`}
-      />
     </div>
   );
 }

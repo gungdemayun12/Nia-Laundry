@@ -94,7 +94,7 @@ export default function Dashboard({ transactions, setTransactions, services }) {
     if (startDate && endDate) {
       const s = new Date(startDate).getTime();
       const e = new Date(endDate);
-      e.setHours(23,59,59,999);
+      e.setHours(23, 59, 59, 999);
       filtered = transactions.filter(t => {
         const d = new Date(t.tanggal).getTime();
         return d >= s && d <= e.getTime();
@@ -129,7 +129,7 @@ export default function Dashboard({ transactions, setTransactions, services }) {
     if (startDate && endDate) {
       const s = new Date(startDate).getTime();
       const e = new Date(endDate);
-      e.setHours(23,59,59,999);
+      e.setHours(23, 59, 59, 999);
       filtered = transactions.filter(t => {
         const d = new Date(t.tanggal).getTime();
         return d >= s && d <= e.getTime();
@@ -150,7 +150,7 @@ export default function Dashboard({ transactions, setTransactions, services }) {
   const formatLabel = (key) => {
     if (period === 'monthly') {
       const [y, m] = key.split('-');
-      const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
       return months[parseInt(m) - 1] + ' ' + y.slice(2);
     }
     const d = new Date(key);
@@ -236,10 +236,10 @@ export default function Dashboard({ transactions, setTransactions, services }) {
 
       {/* Stat Cards — 4 kolom */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}
-           className="stat-grid">
-        <StatCard icon={Banknote}     label="Pendapatan Hari Ini" value={formatRupiah(todayStats.revenue)} color="var(--blue)"   iconBg="var(--blue-bg)" />
-        <StatCard icon={ShoppingCart} label="Transaksi Hari Ini"  value={todayStats.count}                 color="var(--violet)" iconBg="var(--violet-bg)" />
-        <StatCard icon={Weight}       label="Kg Dicuci Hari Ini"  value={`${todayStats.kg.toFixed(1)} kg`} color="var(--cyan)"   iconBg="var(--cyan-bg)" />
+        className="stat-grid">
+        <StatCard icon={Banknote} label="Pendapatan Hari Ini" value={formatRupiah(todayStats.revenue)} color="var(--blue)" iconBg="var(--blue-bg)" />
+        <StatCard icon={ShoppingCart} label="Transaksi Hari Ini" value={todayStats.count} color="var(--violet)" iconBg="var(--violet-bg)" />
+        <StatCard icon={Weight} label="Kg Dicuci Hari Ini" value={`${todayStats.kg.toFixed(1)} kg`} color="var(--cyan)" iconBg="var(--cyan-bg)" />
         <StatCard
           icon={Clock}
           label="Belum Diambil"
@@ -262,16 +262,16 @@ export default function Dashboard({ transactions, setTransactions, services }) {
               <p style={{ fontSize: 11, color: 'var(--text-3)' }}>Total: {formatRupiah(totalRevenue)}</p>
             </div>
           </div>
-          
+
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="field-input" style={{ width: 130, padding: '5px 8px', fontSize: 12 }} />
-              <span style={{color: 'var(--text-3)', fontSize:12}}>-</span>
+              <span style={{ color: 'var(--text-3)', fontSize: 12 }}>-</span>
               <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="field-input" style={{ width: 130, padding: '5px 8px', fontSize: 12 }} />
             </div>
 
             <div style={{ display: 'flex', gap: 4, padding: 4, borderRadius: 10, background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
-              {[['daily','Harian'],['weekly','Mingguan'],['monthly','Bulanan']].map(([k, l]) => (
+              {[['daily', 'Harian'], ['weekly', 'Mingguan'], ['monthly', 'Bulanan']].map(([k, l]) => (
                 <button key={k} onClick={() => setPeriod(k)}
                   style={{
                     padding: '5px 14px', borderRadius: 7, border: 'none', cursor: 'pointer',
@@ -301,7 +301,7 @@ export default function Dashboard({ transactions, setTransactions, services }) {
                 <XAxis dataKey="period" tickFormatter={formatLabel}
                   tick={{ fontSize: 11, fill: 'var(--text-3)', fontWeight: 500 }}
                   axisLine={false} tickLine={false} />
-                <YAxis tickFormatter={(v) => `${(v/1000).toFixed(0)}k`}
+                <YAxis tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
                   tick={{ fontSize: 11, fill: 'var(--text-3)' }}
                   axisLine={false} tickLine={false} width={38} />
                 <Tooltip
@@ -313,7 +313,7 @@ export default function Dashboard({ transactions, setTransactions, services }) {
                   }}
                   cursor={{ fill: 'var(--blue-bg)' }}
                 />
-                <Bar dataKey="pendapatan" fill="var(--blue)" radius={[5,5,0,0]} />
+                <Bar dataKey="pendapatan" fill="var(--blue)" radius={[5, 5, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
 

@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { PlusCircle, Trash2, Printer, Search, CheckCircle2, User, Package, FileText } from 'lucide-react';
+import Swal from 'sweetalert2';
 import { Input, Textarea } from '../components/UI';
-import Modal from '../components/Modal';
 import PrintReceipt, { ReceiptPreview } from '../components/PrintReceipt';
 import { formatRupiah, generateInvoiceId, getDefaultEstimation, generateId } from '../utils/helpers';
 
@@ -66,58 +66,90 @@ export default function TransaksiBaru({
 
   /* ── save ── */
   const handleSave = useCallback(() => {
-    if (!pelangganNama.trim()) { alert('Nama pelanggan harus diisi'); return; }
+    if (!pelangganNama.trim()) { 
+      Swal.fire({ icon: 'warning', title: 'Perhatian', text: 'Nama pelanggan harus diisi' });
+      return; 
+    }
     const validItems = calc.computedItems.filter((i) => i.layanan && i.berat > 0);
-    if (!validItems.length) { alert('Pilih layanan dan masukkan berat terlebih dahulu'); return; }
+    if (!validItems.length) { 
+      Swal.fire({ icon: 'warning', title: 'Perhatian', text: 'Pilih layanan dan masukkan berat terlebih dahulu' });
+      return; 
+    }
 
-    const tx = {
-      id:             generateInvoiceId(transactions),
-      tanggal:        new Date().toISOString(),
-      pelanggan:      { nama: pelangganNama.trim(), noHp: pelangganHp.trim() },
-      items:          validItems,
-      diskon:         0,
-      totalBerat:     calc.totalBerat,
-      totalBayar:     calc.totalBayar,
-      status:         'Proses',
-      estimasiSelesai: estimasi,
-      catatan:        catatan.trim(),
-    };
-
-    setTransactions((p) => [...p, tx]);
-
-    setCustomers((p) => {
-      const idx = p.findIndex((c) => c.nama.toLowerCase() === pelangganNama.trim().toLowerCase());
-      if (idx >= 0) {
-        const u = [...p];
-        u[idx] = {
-          ...u[idx],
-          noHp:           pelangganHp.trim() || u[idx].noHp,
-          totalTransaksi: u[idx].totalTransaksi + 1,
-          totalBelanja:   u[idx].totalBelanja + calc.totalBayar,
+    Swal.fire({
+      title: 'Simpan Transaksi?',
+      text: "Apakah Anda yakin ingin menyimpan transaksi ini?",
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#2563eb',
+      cancelButtonColor: '#ef4444',
+      confirmButtonText: 'Iya, Simpan',
+      cancelButtonText: 'Batal'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        const tx = {
+          id:             generateInvoiceId(transactions),
+          tanggal:        new Date().toISOString(),
+          pelanggan:      { nama: pelangganNama.trim(), noHp: pelangganHp.trim() },
+          items:          validItems,
+          diskon:         0,
+          totalBerat:     calc.totalBerat,
+          totalBayar:     calc.totalBayar,
+          status:         'Proses',
+          estimasiSelesai: estimasi,
+          catatan:        catatan.trim(),
         };
-        return u;
+
+        setTransactions((p) => [...p, tx]);
+
+        setCustomers((p) => {
+          const idx = p.findIndex((c) => c.nama.toLowerCase() === pelangganNama.trim().toLowerCase());
+          if (idx >= 0) {
+            const u = [...p];
+            u[idx] = {
+              ...u[idx],
+              noHp:           pelangganHp.trim() || u[idx].noHp,
+              totalTransaksi: u[idx].totalTransaksi + 1,
+              totalBelanja:   u[idx].totalBelanja + calc.totalBayar,
+            };
+            return u;
+          }
+          return [...p, {
+            id:             generateId('cust', p),
+            nama:           pelangganNama.trim(),
+            noHp:           pelangganHp.trim(),
+            totalTransaksi: 1,
+            totalBelanja:   calc.totalBayar,
+          }];
+        });
+
+        setLastTx(tx);
+        setShowReceipt(true);
+
+        Swal.fire({
+          title: 'Berhasil!',
+          text: 'Transaksi berhasil disimpan.',
+          icon: 'success',
+          confirmButtonColor: '#16a34a',
+          confirmButtonText: 'Cetak Struk',
+          allowOutsideClick: false,
+          showCancelButton: true,
+          cancelButtonText: 'Tutup',
+          cancelButtonColor: '#64748b'
+        }).then((res) => {
+          if (res.isConfirmed) {
+            setTimeout(() => window.print(), 150);
+          }
+        });
+
+        // reset form
+        setPelangganNama('');
+        setPelangganHp('');
+        setItems([{ layananId: '', berat: '' }]);
+        setEstimasi(getDefaultEstimation(2));
+        setCatatan('');
       }
-      return [...p, {
-        id:             generateId('cust', p),
-        nama:           pelangganNama.trim(),
-        noHp:           pelangganHp.trim(),
-        totalTransaksi: 1,
-        totalBelanja:   calc.totalBayar,
-      }];
     });
-
-    setLastTx(tx);
-    setShowReceipt(true);
-
-    // Auto trigger print after a short delay for DOM to update
-    setTimeout(() => window.print(), 300);
-
-    // reset form
-    setPelangganNama('');
-    setPelangganHp('');
-    setItems([{ layananId: '', berat: '' }]);
-    setEstimasi(getDefaultEstimation(2));
-    setCatatan('');
   }, [pelangganNama, pelangganHp, items, calc, estimasi, catatan, transactions, setTransactions, setCustomers]);
 
   /* ── print ── */
@@ -461,29 +493,7 @@ export default function TransaksiBaru({
         </div>
       </div>
 
-      {/* ═══ Receipt Preview (setelah simpan) ═══ */}
-      <Modal
-        isOpen={showReceipt && !!lastTx}
-        onClose={() => setShowReceipt(false)}
-        title={lastTx ? `Transaksi Berhasil - ${lastTx.id}` : 'Struk'}
-        maxWidth="420px"
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <p style={{ fontSize: 13, color: 'var(--green)', fontWeight: 600 }}>
-              ✓ Data telah disimpan
-            </p>
-            <button className="btn btn-primary" onClick={handlePrint} style={{ padding: '7px 14px', fontSize: 12 }}>
-              <Printer size={14} /> Cetak Ulang
-            </button>
-          </div>
-          <div style={{ padding: 20, background: 'var(--surface-2)', display: 'flex', justifyContent: 'center', borderRadius: 8 }}>
-            <div style={{ background: '#fff', borderRadius: 8, padding: 8, boxShadow: '0 2px 12px rgba(0,0,0,0.1)' }}>
-              {lastTx && <ReceiptPreview transaction={lastTx} settings={settings} />}
-            </div>
-          </div>
-        </div>
-      </Modal>
+
 
       <style>{`
         .tx-grid > div:first-child { flex: 1; min-width: 0; }
