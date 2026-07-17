@@ -128,13 +128,13 @@ export default function TransaksiBaru({
 
         Swal.fire({
           title: 'Berhasil!',
-          text: 'Transaksi berhasil disimpan.',
+          html: `Transaksi <strong>${tx.id}</strong> berhasil disimpan.`,
           icon: 'success',
           confirmButtonColor: '#16a34a',
-          confirmButtonText: 'Cetak Struk',
+          confirmButtonText: '<span style="display:inline-flex;align-items:center;gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg> Cetak Struk</span>',
           allowOutsideClick: false,
           showCancelButton: true,
-          cancelButtonText: 'Tutup',
+          cancelButtonText: '<span style="display:inline-flex;align-items:center;gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> Tutup</span>',
           cancelButtonColor: '#64748b'
         }).then((res) => {
           if (res.isConfirmed) {
