@@ -12,6 +12,7 @@ import RiwayatTransaksi from './pages/RiwayatTransaksi';
 import DataPelanggan from './pages/DataPelanggan';
 import Pengaturan from './pages/Pengaturan';
 import Laporan from './pages/Laporan';
+import ReceiptPage from './pages/ReceiptPage';
 
 export default function App() {
   const [transactions, setTransactions] = useLocalStorage('pos_transactions', []);
@@ -50,6 +51,7 @@ export default function App() {
       if (data.pos_settings) setSettings(data.pos_settings);
       Swal.fire({ icon: 'success', title: 'Berhasil', text: 'Data berhasil direstore!', showCloseButton: true });
     } catch (err) {
+      console.error(err);
       Swal.fire({ icon: 'error', title: 'Gagal', text: 'File tidak valid! Pastikan file JSON yang diekspor dari sistem ini.', showCloseButton: true });
     }
     e.target.value = '';
@@ -78,7 +80,6 @@ export default function App() {
                 customers={customers}
                 setCustomers={setCustomers}
                 services={services}
-                settings={settings}
               />
             }
           />
@@ -124,6 +125,10 @@ export default function App() {
                 services={services}
               />
             }
+          />
+          <Route
+            path="/struk/:id"
+            element={<ReceiptPage />}
           />
         </Routes>
       </Layout>

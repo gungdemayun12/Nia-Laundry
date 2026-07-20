@@ -11,29 +11,29 @@ import {
 } from 'lucide-react';
 import { STATUS_OPTIONS } from '../utils/constants';
 
-const COLORS = ['#2563eb', '#16a34a', '#d97706', '#7c3aed', '#0891b2', '#dc2626'];
+const COLORS = ['#212529', '#495057', '#6c757d', '#adb5bd', '#ced4da', '#f8f9fa'];
 
-/* ── mini helpers ── */
 function StatCard({ icon: Icon, label, value, sub, color, iconBg }) {
   return (
-    <div className="card" style={{ padding: '18px 20px' }}>
+    <div className="card" style={{ padding: '20px 22px' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-        <div>
-          <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-3)', marginBottom: 6 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-3)', marginBottom: 8 }}>
             {label}
           </p>
-          <p style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', lineHeight: 1, letterSpacing: '-0.02em' }}>
+          <p style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', lineHeight: 1, letterSpacing: '-0.03em' }}>
             {value}
           </p>
           {sub && (
             <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--amber)', marginTop: 6 }}>
-              ⚠ {sub}
+              {sub}
             </p>
           )}
         </div>
         <div style={{
-          width: 40, height: 40, borderRadius: 10, flexShrink: 0,
+          width: 42, height: 42, borderRadius: 12, flexShrink: 0,
           background: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          border: '1.5px solid var(--border)',
         }}>
           <Icon size={19} style={{ color }} />
         </div>
@@ -42,7 +42,7 @@ function StatCard({ icon: Icon, label, value, sub, color, iconBg }) {
   );
 }
 
-export default function Dashboard({ transactions, setTransactions, services }) {
+export default function Dashboard({ transactions, setTransactions }) {
   const [period, setPeriod] = useState('daily');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -144,7 +144,7 @@ export default function Dashboard({ transactions, setTransactions, services }) {
     return Object.entries(map)
       .map(([name, value]) => ({ name, value: Number(value.toFixed(1)) }))
       .sort((a, b) => b.value - a.value)
-      .slice(0, 5); // top 5
+      .slice(0, 5);
   }, [transactions, startDate, endDate]);
 
   const formatLabel = (key) => {
@@ -202,30 +202,30 @@ export default function Dashboard({ transactions, setTransactions, services }) {
     setTimeout(() => win.print(), 250);
   };
 
-  /* ── render ── */
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
       {/* Alert */}
       {overdueItems.length > 0 && (
-        <div style={{
+        <div className="card" style={{
           display: 'flex', alignItems: 'flex-start', gap: 12,
-          padding: '12px 16px', borderRadius: 12,
-          background: 'var(--amber-bg)', border: '1px solid var(--amber-border)',
+          padding: '14px 18px',
+          background: 'var(--amber-bg)',
+          border: '1.5px solid var(--amber-border)',
         }}>
-          <AlertTriangle size={17} style={{ color: 'var(--amber)', flexShrink: 0, marginTop: 1 }} />
+          <AlertTriangle size={18} style={{ color: 'var(--amber)', flexShrink: 0, marginTop: 1 }} />
           <div>
-            <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--amber)' }}>
+            <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--amber)' }}>
               {overdueItems.length} laundry sudah melewati estimasi selesai
             </p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2px 16px', marginTop: 4 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2px 16px', marginTop: 6 }}>
               {overdueItems.slice(0, 3).map((t) => (
-                <span key={t.id} style={{ fontSize: 11, color: 'var(--amber)' }}>
+                <span key={t.id} style={{ fontSize: 11, color: 'var(--text-2)' }}>
                   {t.id} · {t.pelanggan?.nama} · Est: {formatDate(t.estimasiSelesai)}
                 </span>
               ))}
               {overdueItems.length > 3 && (
-                <span style={{ fontSize: 11, color: 'var(--amber)' }}>
+                <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
                   +{overdueItems.length - 3} lainnya
                 </span>
               )}
@@ -237,37 +237,37 @@ export default function Dashboard({ transactions, setTransactions, services }) {
       {/* Stat Cards — 4 kolom */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}
         className="stat-grid">
-        <StatCard icon={Banknote} label="Pendapatan Hari Ini" value={formatRupiah(todayStats.revenue)} color="var(--blue)" iconBg="var(--blue-bg)" />
-        <StatCard icon={ShoppingCart} label="Transaksi Hari Ini" value={todayStats.count} color="var(--violet)" iconBg="var(--violet-bg)" />
-        <StatCard icon={Weight} label="Kg Dicuci Hari Ini" value={`${todayStats.kg.toFixed(1)} kg`} color="var(--cyan)" iconBg="var(--cyan-bg)" />
+        <StatCard icon={Banknote} label="Pendapatan Hari Ini" value={formatRupiah(todayStats.revenue)} color="var(--text)" iconBg="var(--accent-bg)" />
+        <StatCard icon={ShoppingCart} label="Transaksi Hari Ini" value={todayStats.count} color="var(--text)" iconBg="var(--accent-bg)" />
+        <StatCard icon={Weight} label="Kg Dicuci Hari Ini" value={`${todayStats.kg.toFixed(1)} kg`} color="var(--text)" iconBg="var(--accent-bg)" />
         <StatCard
           icon={Clock}
           label="Belum Diambil"
           value={pendingPickup.length}
           sub={overdueItems.length > 0 ? `${overdueItems.length} terlambat` : undefined}
-          color={overdueItems.length > 0 ? 'var(--amber)' : 'var(--green)'}
-          iconBg={overdueItems.length > 0 ? 'var(--amber-bg)' : 'var(--green-bg)'}
+          color="var(--amber)"
+          iconBg="var(--amber-bg)"
         />
       </div>
 
       {/* Chart Section */}
-      <div className="card" style={{ padding: '20px 24px' }}>
+      <div className="card" style={{ padding: '22px 26px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--blue-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <TrendingUp size={16} style={{ color: 'var(--blue)' }} />
+            <div style={{ width: 34, height: 34, borderRadius: 9, background: 'var(--accent-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid var(--accent-border)' }}>
+              <TrendingUp size={16} style={{ color: 'var(--text)' }} />
             </div>
             <div>
               <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>Ringkasan Pendapatan</p>
-              <p style={{ fontSize: 11, color: 'var(--text-3)' }}>Total: {formatRupiah(totalRevenue)}</p>
+              <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>Total: {formatRupiah(totalRevenue)}</p>
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="field-input" style={{ width: 130, padding: '5px 8px', fontSize: 12 }} />
+              <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="field-input" style={{ width: 130, padding: '5px 10px', fontSize: 12 }} />
               <span style={{ color: 'var(--text-3)', fontSize: 12 }}>-</span>
-              <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="field-input" style={{ width: 130, padding: '5px 8px', fontSize: 12 }} />
+              <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="field-input" style={{ width: 130, padding: '5px 10px', fontSize: 12 }} />
             </div>
 
             <div style={{ display: 'flex', gap: 4, padding: 4, borderRadius: 10, background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
@@ -276,18 +276,17 @@ export default function Dashboard({ transactions, setTransactions, services }) {
                   style={{
                     padding: '5px 14px', borderRadius: 7, border: 'none', cursor: 'pointer',
                     fontSize: 12, fontWeight: 600, transition: 'all 0.15s',
-                    background: period === k ? 'var(--blue)' : 'transparent',
+                    background: period === k ? 'var(--text)' : 'transparent',
                     color: period === k ? '#fff' : 'var(--text-3)',
-                    boxShadow: period === k ? '0 1px 4px rgba(37,99,235,0.3)' : 'none',
                   }}
                 >{l}</button>
               ))}
             </div>
 
-            <button className="btn btn-secondary" onClick={handleExportCSV} style={{ padding: '5px 12px', fontSize: 12 }}>
+            <button className="btn btn-secondary" onClick={handleExportCSV} style={{ padding: '5px 14px', fontSize: 12 }}>
               <Download size={14} /> Excel
             </button>
-            <button className="btn btn-secondary" onClick={handleExportPDF} style={{ padding: '5px 12px', fontSize: 12 }}>
+            <button className="btn btn-secondary" onClick={handleExportPDF} style={{ padding: '5px 14px', fontSize: 12 }}>
               <Printer size={14} /> PDF
             </button>
           </div>
@@ -311,18 +310,18 @@ export default function Dashboard({ transactions, setTransactions, services }) {
                     background: 'var(--surface)', border: '1px solid var(--border)',
                     borderRadius: 10, fontSize: 12, boxShadow: 'var(--shadow-md)',
                   }}
-                  cursor={{ fill: 'var(--blue-bg)' }}
+                  cursor={{ fill: 'var(--accent-bg)' }}
                 />
-                <Bar dataKey="pendapatan" fill="var(--blue)" radius={[5, 5, 0, 0]} />
+                <Bar dataKey="pendapatan" fill="var(--text)" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }} className="bottom-grid">
               {/* Pie Chart */}
-              <div style={{ background: 'var(--surface-2)', padding: 16, borderRadius: 12, border: '1px solid var(--border)' }}>
+              <div style={{ background: 'var(--surface-2)', padding: 18, borderRadius: 12, border: '1px solid var(--border)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                  <PieChartIcon size={16} style={{ color: 'var(--violet)' }} />
-                  <p style={{ fontSize: 13, fontWeight: 600 }}>Layanan Terlaris (Kg)</p>
+                  <PieChartIcon size={16} style={{ color: 'var(--text)' }} />
+                  <p style={{ fontSize: 13, fontWeight: 700 }}>Layanan Terlaris (Kg)</p>
                 </div>
                 <ResponsiveContainer width="100%" height={180}>
                   <PieChart>
@@ -338,10 +337,10 @@ export default function Dashboard({ transactions, setTransactions, services }) {
               </div>
 
               {/* Line Chart */}
-              <div style={{ background: 'var(--surface-2)', padding: 16, borderRadius: 12, border: '1px solid var(--border)' }}>
+              <div style={{ background: 'var(--surface-2)', padding: 18, borderRadius: 12, border: '1px solid var(--border)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                   <Activity size={16} style={{ color: 'var(--green)' }} />
-                  <p style={{ fontSize: 13, fontWeight: 600 }}>Tren Jumlah Transaksi</p>
+                  <p style={{ fontSize: 13, fontWeight: 700 }}>Tren Jumlah Transaksi</p>
                 </div>
                 <ResponsiveContainer width="100%" height={180}>
                   <LineChart data={chartData}>
@@ -357,7 +356,7 @@ export default function Dashboard({ transactions, setTransactions, services }) {
           </div>
         ) : (
           <div style={{ height: 230, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, color: 'var(--text-3)' }}>
-            <TrendingUp size={36} style={{ opacity: 0.25 }} />
+            <TrendingUp size={36} style={{ opacity: 0.2 }} />
             <p style={{ fontSize: 13 }}>Belum ada data transaksi pada periode ini</p>
           </div>
         )}
@@ -373,14 +372,14 @@ export default function Dashboard({ transactions, setTransactions, services }) {
               <div style={{ width: 4, height: 18, borderRadius: 99, background: 'var(--amber)' }} />
               <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Perlu Diambil</p>
             </div>
-            <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 99, background: 'var(--amber-bg)', color: 'var(--amber)' }}>
+            <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 99, background: 'var(--amber-bg)', color: 'var(--amber)', border: '1px solid var(--amber-border)' }}>
               {pendingPickup.length} item
             </span>
           </div>
 
           {pendingPickup.length === 0 ? (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, color: 'var(--text-3)', minHeight: 140 }}>
-              <span style={{ fontSize: 28 }}>🎉</span>
+              <span style={{ fontSize: 28, opacity: 0.5 }}>✓</span>
               <p style={{ fontSize: 13 }}>Semua sudah diambil</p>
             </div>
           ) : (
@@ -388,7 +387,7 @@ export default function Dashboard({ transactions, setTransactions, services }) {
               {pendingPickup.slice(0, 8).map((t) => (
                 <div key={t.id} style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
-                  padding: '10px 12px', borderRadius: 8,
+                  padding: '10px 12px', borderRadius: 10,
                   background: 'var(--surface-2)', border: '1px solid var(--border)',
                 }}>
                   <div style={{ minWidth: 0, flex: 1 }}>
@@ -416,17 +415,17 @@ export default function Dashboard({ transactions, setTransactions, services }) {
         <div className="card" style={{ padding: '20px 20px', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 4, height: 18, borderRadius: 99, background: 'var(--blue)' }} />
+              <div style={{ width: 4, height: 18, borderRadius: 99, background: 'var(--text)' }} />
               <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Transaksi Terbaru</p>
             </div>
-            <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 99, background: 'var(--blue-bg)', color: 'var(--blue)' }}>
+            <span style={{ fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 99, background: 'var(--accent-bg)', color: 'var(--text)', border: '1px solid var(--accent-border)' }}>
               {transactions.length} total
             </span>
           </div>
 
           {recentTx.length === 0 ? (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, color: 'var(--text-3)', minHeight: 140 }}>
-              <span style={{ fontSize: 28 }}>📋</span>
+              <span style={{ fontSize: 28, opacity: 0.4 }}>📋</span>
               <p style={{ fontSize: 13 }}>Belum ada transaksi</p>
             </div>
           ) : (
@@ -434,7 +433,7 @@ export default function Dashboard({ transactions, setTransactions, services }) {
               {recentTx.map((t) => (
                 <div key={t.id} style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
-                  padding: '10px 12px', borderRadius: 8,
+                  padding: '10px 12px', borderRadius: 10,
                   background: 'var(--surface-2)', border: '1px solid var(--border)',
                 }}>
                   <div style={{ minWidth: 0, flex: 1 }}>

@@ -1,24 +1,32 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { PlusCircle, Trash2, Printer, Search, CheckCircle2, User, Package, FileText } from 'lucide-react';
+import { PlusCircle, Trash2, Search, CheckCircle2, User, Package, FileText } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { Input, Textarea } from '../components/UI';
-import PrintReceipt, { ReceiptPreview } from '../components/PrintReceipt';
 import { formatRupiah, generateInvoiceId, getDefaultEstimation, generateId } from '../utils/helpers';
+
+const STEPS = [
+  { key: 'customer', label: 'Pelanggan', icon: User },
+  { key: 'service', label: 'Layanan', icon: Package },
+  { key: 'detail', label: 'Detail', icon: FileText },
+];
 
 export default function TransaksiBaru({
   transactions, setTransactions,
   customers, setCustomers,
-  services, settings,
+  services,
 }) {
+  const navigate = useNavigate();
+  const [step, setStep] = useState(0);
   const [pelangganNama, setPelangganNama] = useState('');
   const [pelangganHp,   setPelangganHp]   = useState('');
   const [items,         setItems]         = useState([{ layananId: '', berat: '' }]);
   const [estimasi,      setEstimasi]      = useState(getDefaultEstimation(2));
   const [catatan,       setCatatan]       = useState('');
-  const [lastTx,        setLastTx]        = useState(null);
-  const [showReceipt,   setShowReceipt]   = useState(false);
   const [suggestions,   setSuggestions]   = useState([]);
   const [showSug,       setShowSug]       = useState(false);
+
+  const hasService = items.some(i => i.layananId && parseFloat(i.berat) > 0);
 
   /* ── autocomplete ── */
   const handleNama = (val) => {
@@ -49,31 +57,44 @@ export default function TransaksiBaru({
 
   /* ── calculations ── */
   const calc = useMemo(() => {
-    let subtotalAll = 0, totalBerat = 0;
     const computedItems = items.map((item) => {
       const svc   = services.find((s) => s.id === item.layananId);
       const berat = parseFloat(item.berat) || 0;
       const harga = svc?.hargaPerKg || 0;
       const sub   = berat * harga;
-      subtotalAll += sub;
-      totalBerat  += berat;
       return { layanan: svc?.nama || '', hargaPerKg: harga, berat, subtotal: sub };
     });
+    const subtotalAll = computedItems.reduce((s, i) => s + i.subtotal, 0);
+    const totalBerat = computedItems.reduce((s, i) => s + i.berat, 0);
     return { computedItems, subtotalAll, totalBerat, diskon: 0, totalBayar: subtotalAll };
   }, [items, services]);
 
   const validCount = items.filter((i) => i.layananId && parseFloat(i.berat) > 0).length;
 
+  const canProceed =
+    step === 0 ? pelangganNama.trim().length > 0 :
+    step === 1 ? hasService :
+    true;
+
+  const handleStepNext = () => {
+    if (step < 2 && canProceed) setStep(step + 1);
+  };
+
+  const handleStepBack = () => {
+    if (step > 0) setStep(step - 1);
+  };
+
+  /* eslint-disable react-hooks/exhaustive-deps */
   /* ── save ── */
   const handleSave = useCallback(() => {
-    if (!pelangganNama.trim()) { 
+    if (!pelangganNama.trim()) {
       Swal.fire({ icon: 'warning', title: 'Perhatian', text: 'Nama pelanggan harus diisi', showCloseButton: true });
-      return; 
+      return;
     }
     const validItems = calc.computedItems.filter((i) => i.layanan && i.berat > 0);
-    if (!validItems.length) { 
+    if (!validItems.length) {
       Swal.fire({ icon: 'warning', title: 'Perhatian', text: 'Pilih layanan dan masukkan berat terlebih dahulu', showCloseButton: true });
-      return; 
+      return;
     }
 
     Swal.fire({
@@ -81,11 +102,13 @@ export default function TransaksiBaru({
       text: "Apakah Anda yakin ingin menyimpan transaksi ini?",
       icon: 'question',
       showCancelButton: true,
-      confirmButtonColor: '#2563eb',
-      cancelButtonColor: '#ef4444',
+      confirmButtonColor: 'var(--text)',
+      cancelButtonColor: 'var(--border-2)',
       confirmButtonText: 'Iya, Simpan',
       cancelButtonText: 'Batal',
-      showCloseButton: true
+      showCloseButton: true,
+      background: 'var(--surface)',
+      color: 'var(--text)',
     }).then((result) => {
       if (result.isConfirmed) {
         const tx = {
@@ -124,41 +147,34 @@ export default function TransaksiBaru({
           }];
         });
 
-        setLastTx(tx);
-        setShowReceipt(true);
-
         Swal.fire({
           title: 'Berhasil!',
           html: `Transaksi <strong>${tx.id}</strong> berhasil disimpan.`,
           icon: 'success',
-          confirmButtonColor: '#16a34a',
-          confirmButtonText: '<span style="display:inline-flex;align-items:center;gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg> Cetak Struk</span>',
+          confirmButtonColor: 'var(--text)',
+          confirmButtonText: '<span style="display:inline-flex;align-items:center;gap:6px;">Lihat & Cetak Struk</span>',
           allowOutsideClick: false,
           showCancelButton: true,
-          cancelButtonText: '<span style="display:inline-flex;align-items:center;gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> Tutup</span>',
-          cancelButtonColor: '#64748b',
-          showCloseButton: true
+          cancelButtonText: 'Tutup',
+          cancelButtonColor: 'var(--border-2)',
+          showCloseButton: true,
+          background: 'var(--surface)',
+          color: 'var(--text)',
         }).then((res) => {
           if (res.isConfirmed) {
-            setTimeout(() => window.print(), 150);
+            navigate(`/struk/${tx.id}`);
           }
         });
 
-        // reset form
         setPelangganNama('');
         setPelangganHp('');
         setItems([{ layananId: '', berat: '' }]);
         setEstimasi(getDefaultEstimation(2));
         setCatatan('');
+        setStep(0);
       }
     });
   }, [pelangganNama, pelangganHp, items, calc, estimasi, catatan, transactions, setTransactions, setCustomers]);
-
-  /* ── print ── */
-  const handlePrint = () => {
-    // small delay to ensure portal is mounted
-    setTimeout(() => window.print(), 150);
-  };
 
   /* ── keyboard shortcut ── */
   useEffect(() => {
@@ -171,31 +187,69 @@ export default function TransaksiBaru({
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-      {/* Print portal — always mounted when receipt exists */}
-      {showReceipt && lastTx && (
-        <PrintReceipt transaction={lastTx} settings={settings} />
-      )}
+      {/* Step Indicator */}
+      <div className="card" style={{ padding: '16px 24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+          {STEPS.map((s, i) => {
+            const StepIcon = s.icon;
+            const isActive = step === i;
+            const isDone = step > i;
+            return (
+              <div key={s.key} style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}
+                  onClick={() => { if (isDone) setStep(i); }}>
+                  <div style={{
+                    width: 32, height: 32, borderRadius: 10, flexShrink: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: isActive ? 'var(--text)' : isDone ? 'var(--green)' : 'var(--surface-2)',
+                    color: isActive || isDone ? '#fff' : 'var(--text-3)',
+                    border: `1.5px solid ${isActive ? 'var(--text)' : isDone ? 'var(--green)' : 'var(--border)'}`,
+                    transition: 'all 0.2s',
+                  }}>
+                    {isDone ? <CheckCircle2 size={16} /> : <StepIcon size={16} />}
+                  </div>
+                  <div>
+                    <p style={{
+                      fontSize: 12, fontWeight: isActive ? 700 : 500,
+                      color: isActive ? 'var(--text)' : 'var(--text-3)',
+                    }}>
+                      {s.label}
+                    </p>
+                  </div>
+                </div>
+                {i < STEPS.length - 1 && (
+                  <div style={{ flex: 1, height: 2, background: isDone ? 'var(--green)' : 'var(--border)', margin: '0 12px', borderRadius: 99 }} />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }} className="tx-grid">
 
-        {/* ═══ LEFT COLUMN ═══ */}
+        {/* LEFT COLUMN */}
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
 
           {/* ── 1. Data Pelanggan ── */}
-          <div className="card" style={{ overflow: 'visible' }}>
+          <div className="card" style={{ overflow: 'visible', borderColor: step === 0 ? 'var(--text)' : 'var(--border)' }}>
             <div style={{
               display: 'flex', alignItems: 'center', gap: 10,
               padding: '14px 20px', borderBottom: '1px solid var(--border)',
-              background: 'var(--surface-2)', borderRadius: 'var(--r-lg) var(--r-lg) 0 0',
+              background: 'var(--surface-2)',
             }}>
-              <div style={{ width: 30, height: 30, borderRadius: 8, background: 'var(--blue-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <User size={15} style={{ color: 'var(--blue)' }} />
+              <div style={{ width: 30, height: 30, borderRadius: 8, background: 'var(--accent-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid var(--accent-border)' }}>
+                <User size={15} style={{ color: 'var(--text)' }} />
               </div>
               <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Data Pelanggan</p>
+              {pelangganNama.trim() && (
+                <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 600, color: 'var(--green)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <CheckCircle2 size={12} /> Terisi
+                </span>
+              )}
             </div>
             <div style={{ padding: 20 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }} className="two-col">
-                {/* nama + autocomplete */}
                 <div style={{ position: 'relative' }}>
                   <label className="field-label">Nama Pelanggan *</label>
                   <input
@@ -206,15 +260,14 @@ export default function TransaksiBaru({
                     placeholder="Ketik nama pelanggan..."
                     autoComplete="off"
                   />
-                  {/* Dropdown suggestion — z-index tinggi, keluar dari card */}
                   {showSug && suggestions.length > 0 && (
                     <div style={{
                       position: 'absolute', left: 0, right: 0, top: 'calc(100% + 4px)',
                       zIndex: 9999,
                       background: 'var(--surface)',
-                      border: '1.5px solid var(--blue-border)',
+                      border: '1.5px solid var(--accent-border)',
                       borderRadius: 10,
-                      boxShadow: '0 8px 24px rgba(15,23,42,0.15)',
+                      boxShadow: 'var(--shadow-lg)',
                       overflow: 'hidden',
                     }}>
                       <div style={{
@@ -237,14 +290,15 @@ export default function TransaksiBaru({
                             fontSize: 13, color: 'var(--text)', textAlign: 'left',
                             borderBottom: '1px solid var(--border)',
                           }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = 'var(--blue-bg)'}
+                          onMouseEnter={(e) => e.currentTarget.style.background = 'var(--accent-bg)'}
                           onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
                         >
                           <div style={{
                             width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
-                            background: 'var(--blue-bg)', color: 'var(--blue)',
+                            background: 'var(--accent-bg)', color: 'var(--text)',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             fontSize: 12, fontWeight: 800,
+                            border: '1.5px solid var(--accent-border)',
                           }}>
                             {c.nama.charAt(0).toUpperCase()}
                           </div>
@@ -273,17 +327,22 @@ export default function TransaksiBaru({
           </div>
 
           {/* ── 2. Layanan ── */}
-          <div className="card" style={{ overflow: 'visible' }}>
+          <div className="card" style={{ overflow: 'visible', borderColor: step === 1 ? 'var(--text)' : 'var(--border)' }}>
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               padding: '14px 20px', borderBottom: '1px solid var(--border)',
-              background: 'var(--surface-2)', borderRadius: 'var(--r-lg) var(--r-lg) 0 0',
+              background: 'var(--surface-2)',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 30, height: 30, borderRadius: 8, background: '#ede9fe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Package size={15} style={{ color: 'var(--violet)' }} />
+                <div style={{ width: 30, height: 30, borderRadius: 8, background: 'var(--accent-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid var(--accent-border)' }}>
+                  <Package size={15} style={{ color: 'var(--text)' }} />
                 </div>
                 <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Layanan</p>
+                {validCount > 0 && (
+                  <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--green)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <CheckCircle2 size={12} /> {validCount} item
+                  </span>
+                )}
               </div>
               <button
                 onClick={addItem}
@@ -295,7 +354,6 @@ export default function TransaksiBaru({
             </div>
 
             <div style={{ padding: '16px 20px' }}>
-              {/* Table header */}
               <div style={{
                 display: 'grid', gridTemplateColumns: '1fr 120px 150px 40px',
                 gap: 10, padding: '0 4px 10px',
@@ -306,7 +364,6 @@ export default function TransaksiBaru({
                 ))}
               </div>
 
-              {/* Item rows */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {items.map((item, index) => {
                   const svc  = services.find((s) => s.id === item.layananId);
@@ -345,8 +402,8 @@ export default function TransaksiBaru({
                       <div style={{
                         padding: '8px 12px', borderRadius: 8, textAlign: 'right',
                         fontWeight: 700, fontSize: 13,
-                        color: sub > 0 ? 'var(--blue)' : 'var(--text-3)',
-                        background: sub > 0 ? 'var(--blue-bg)' : 'var(--surface)',
+                        color: sub > 0 ? 'var(--text)' : 'var(--text-3)',
+                        background: sub > 0 ? 'var(--accent-bg)' : 'var(--surface)',
                         border: '1px solid var(--border)',
                       }}>
                         {formatRupiah(sub)}
@@ -356,7 +413,7 @@ export default function TransaksiBaru({
                         onClick={() => removeItem(index)}
                         disabled={items.length === 1}
                         style={{
-                          width: 32, height: 32, borderRadius: 8, border: 'none',
+                          width: 32, height: 32, borderRadius: 8, border: '1.5px solid transparent',
                           background: 'transparent', cursor: items.length === 1 ? 'not-allowed' : 'pointer',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           color: 'var(--red)', opacity: items.length === 1 ? 0.25 : 1,
@@ -374,14 +431,14 @@ export default function TransaksiBaru({
           </div>
 
           {/* ── 3. Detail Tambahan ── */}
-          <div className="card">
+          <div className="card" style={{ overflow: 'visible', borderColor: step === 2 ? 'var(--text)' : 'var(--border)' }}>
             <div style={{
               display: 'flex', alignItems: 'center', gap: 10,
               padding: '14px 20px', borderBottom: '1px solid var(--border)',
-              background: 'var(--surface-2)', borderRadius: 'var(--r-lg) var(--r-lg) 0 0',
+              background: 'var(--surface-2)',
             }}>
-              <div style={{ width: 30, height: 30, borderRadius: 8, background: 'var(--green-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <FileText size={15} style={{ color: 'var(--green)' }} />
+              <div style={{ width: 30, height: 30, borderRadius: 8, background: 'var(--accent-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid var(--accent-border)' }}>
+                <FileText size={15} style={{ color: 'var(--text)' }} />
               </div>
               <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Detail Tambahan</p>
             </div>
@@ -402,19 +459,38 @@ export default function TransaksiBaru({
               </div>
             </div>
           </div>
+
+          {/* Navigation Buttons */}
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-between' }}>
+            {step > 0 ? (
+              <button className="btn btn-secondary" onClick={handleStepBack} style={{ padding: '10px 20px' }}>
+                ← Kembali
+              </button>
+            ) : <div />}
+            {step < 2 ? (
+              <button
+                className="btn btn-primary"
+                onClick={handleStepNext}
+                disabled={!canProceed}
+                style={{ padding: '10px 24px', marginLeft: 'auto' }}
+              >
+                Lanjut →
+              </button>
+            ) : <div />}
+          </div>
         </div>
 
-        {/* ═══ RIGHT COLUMN — Summary ═══ */}
+        {/* RIGHT COLUMN — Summary */}
         <div style={{ width: 280, flexShrink: 0 }}>
           <div style={{ position: 'sticky', top: 16 }}>
             <div className="card" style={{ overflow: 'hidden' }}>
               {/* Header */}
               <div style={{
                 padding: '14px 18px',
-                background: 'linear-gradient(135deg, var(--blue) 0%, var(--blue-2) 100%)',
+                background: 'var(--text)',
               }}>
                 <p style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Ringkasan Pesanan</p>
-                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)', marginTop: 2 }}>
+                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>
                   {validCount} layanan · {calc.totalBerat.toFixed(1)} kg
                 </p>
               </div>
@@ -443,7 +519,7 @@ export default function TransaksiBaru({
                   );
                 })}
 
-                {validCount > 0 && <div style={{ borderTop: '1px dashed var(--border)' }} />}
+                {validCount > 0 && <div style={{ borderTop: '1.5px dashed var(--border)' }} />}
 
                 {/* Subtotals */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -461,10 +537,10 @@ export default function TransaksiBaru({
                 <div style={{
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   padding: '12px 14px', borderRadius: 10,
-                  background: 'var(--blue-bg)', border: '1px solid var(--blue-border)',
+                  background: 'var(--accent-bg)', border: '1.5px solid var(--accent-border)',
                 }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)' }}>TOTAL</span>
-                  <span style={{ fontSize: 20, fontWeight: 900, color: 'var(--blue)', letterSpacing: '-0.02em' }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>TOTAL</span>
+                  <span style={{ fontSize: 20, fontWeight: 900, color: 'var(--text)', letterSpacing: '-0.02em' }}>
                     {formatRupiah(calc.totalBayar)}
                   </span>
                 </div>
@@ -474,14 +550,14 @@ export default function TransaksiBaru({
                   onClick={handleSave}
                   style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                    width: '100%', padding: 12, borderRadius: 10, border: 'none',
-                    background: 'var(--blue)', color: '#fff',
+                    width: '100%', padding: 12, borderRadius: 10, border: '1.5px solid var(--text)',
+                    background: 'var(--text)', color: '#fff',
                     fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                    boxShadow: '0 2px 8px rgba(37,99,235,0.3)',
-                    transition: 'background 0.15s',
+                    boxShadow: 'var(--shadow-sm)',
+                    transition: 'all 0.15s',
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--blue-2)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'var(--blue)'}
+                  onMouseEnter={(e) => e.currentTarget.style.background = '#000'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'var(--text)'}
                 >
                   <CheckCircle2 size={16} />
                   Simpan &amp; Cetak Struk
@@ -494,8 +570,6 @@ export default function TransaksiBaru({
           </div>
         </div>
       </div>
-
-
 
       <style>{`
         .tx-grid > div:first-child { flex: 1; min-width: 0; }

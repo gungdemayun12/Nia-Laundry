@@ -3,16 +3,12 @@ import { Search, Award, Phone, ShoppingCart, Wallet, UserCircle2 } from 'lucide-
 import { StatusBadge } from '../components/UI';
 import { formatRupiah, formatDateTime } from '../utils/helpers';
 
-/* warna avatar berdasarkan huruf pertama */
 const AVATAR_COLORS = [
-  { bg: '#dbeafe', color: '#2563eb' },
-  { bg: '#ede9fe', color: '#7c3aed' },
-  { bg: '#d1fae5', color: '#16a34a' },
-  { bg: '#fef3c7', color: '#d97706' },
-  { bg: '#fce7f3', color: '#db2777' },
-  { bg: '#ecfeff', color: '#0891b2' },
+  { bg: 'var(--accent-bg)', color: 'var(--text)', border: 'var(--accent-border)' },
+  { bg: 'var(--surface-2)', color: 'var(--text)', border: 'var(--border)' },
+  { bg: 'var(--surface-3)', color: 'var(--text)', border: 'var(--border-2)' },
 ];
-function avatarColor(name = '') {
+function avatarStyle(name = '') {
   const idx = (name.charCodeAt(0) || 0) % AVATAR_COLORS.length;
   return AVATAR_COLORS[idx];
 }
@@ -41,8 +37,8 @@ export default function DataPelanggan({ customers, transactions }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-      {/* ── Toolbar ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+      {/* Toolbar */}
+      <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '12px 18px' }}>
         <div style={{ position: 'relative', flex: '1 1 240px', maxWidth: 400 }}>
           <Search size={14} style={{
             position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)',
@@ -68,7 +64,7 @@ export default function DataPelanggan({ customers, transactions }) {
         </div>
       </div>
 
-      {/* ── Empty state ── */}
+      {/* Empty state */}
       {enriched.length === 0 && (
         <div className="card" style={{ padding: 48, textAlign: 'center' }}>
           <UserCircle2 size={40} style={{ color: 'var(--text-3)', margin: '0 auto 12px' }} />
@@ -81,11 +77,11 @@ export default function DataPelanggan({ customers, transactions }) {
         </div>
       )}
 
-      {/* ── Customer Grid ── */}
+      {/* Customer Grid */}
       {enriched.length > 0 && (
         <div className="cust-grid" style={{ display: 'grid', gap: 14 }}>
           {enriched.map((c) => {
-            const av = avatarColor(c.nama);
+            const av = avatarStyle(c.nama);
             return (
               <div key={c.id} className="card" style={{ padding: 0, overflow: 'hidden' }}>
                 {/* Card header */}
@@ -93,12 +89,12 @@ export default function DataPelanggan({ customers, transactions }) {
                   display: 'flex', alignItems: 'center', gap: 12,
                   padding: '16px 18px', borderBottom: '1px solid var(--border)',
                 }}>
-                  {/* Avatar */}
                   <div style={{
                     width: 42, height: 42, borderRadius: '50%', flexShrink: 0,
                     background: av.bg, color: av.color,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: 16, fontWeight: 800,
+                    border: `1.5px solid ${av.border}`,
                   }}>
                     {c.nama.charAt(0).toUpperCase()}
                   </div>
@@ -149,7 +145,7 @@ export default function DataPelanggan({ customers, transactions }) {
                       <Wallet size={13} style={{ color: 'var(--text-3)' }} />
                       <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Total Belanja</span>
                     </div>
-                    <p style={{ fontSize: 15, fontWeight: 800, color: 'var(--blue)', lineHeight: 1 }}>
+                    <p style={{ fontSize: 15, fontWeight: 800, color: 'var(--text)', lineHeight: 1 }}>
                       {formatRupiah(c.totalBelanja)}
                     </p>
                   </div>

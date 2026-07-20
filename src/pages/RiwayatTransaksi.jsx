@@ -1,18 +1,17 @@
-import { useState, useRef, useMemo } from 'react';
-import { Search, Printer, Edit3, Trash2, Download, X, ChevronRight } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Search, Printer, Edit3, Trash2, Download } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { StatusBadge } from '../components/UI';
 import Modal from '../components/Modal';
-import PrintReceipt, { ReceiptPreview } from '../components/PrintReceipt';
 import { formatRupiah, formatDateTime, formatDate, exportCSV } from '../utils/helpers';
 import { STATUS_OPTIONS } from '../utils/constants';
 
-export default function RiwayatTransaksi({ transactions, setTransactions, services, settings }) {
+export default function RiwayatTransaksi({ transactions, setTransactions }) {
+  const navigate = useNavigate();
   const [search,        setSearch]        = useState('');
   const [filterStatus,  setFilterStatus]  = useState('');
   const [filterDate,    setFilterDate]    = useState('');
-  const [selectedTx,    setSelectedTx]    = useState(null);
-  const [showReceipt,   setShowReceipt]   = useState(false);
   const [editTx,        setEditTx]        = useState(null);
   const [editStatus,    setEditStatus]    = useState('');
 
@@ -48,26 +47,23 @@ export default function RiwayatTransaksi({ transactions, setTransactions, servic
       text: `Transaksi ${id} akan dihapus secara permanen. Data yang sudah dihapus tidak bisa dikembalikan.`,
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#ef4444',
-      cancelButtonColor: '#64748b',
+      confirmButtonColor: 'var(--red)',
+      cancelButtonColor: 'var(--border-2)',
       confirmButtonText: 'Ya, Hapus!',
       cancelButtonText: 'Batal',
-      showCloseButton: true
+      showCloseButton: true,
+      background: 'var(--surface)',
+      color: 'var(--text)',
     }).then((result) => {
       if (result.isConfirmed) {
         handleDelete(id);
-        Swal.fire({ title: 'Terhapus!', text: 'Transaksi berhasil dihapus.', icon: 'success', confirmButtonColor: '#16a34a', showCloseButton: true });
+        Swal.fire({ title: 'Terhapus!', text: 'Transaksi berhasil dihapus.', icon: 'success', confirmButtonColor: 'var(--text)', showCloseButton: true, background: 'var(--surface)', color: 'var(--text)' });
       }
     });
   };
 
   const handlePrintReceipt = (tx) => {
-    setSelectedTx(tx);
-    setShowReceipt(true);
-  };
-
-  const handleDoPrint = () => {
-    setTimeout(() => window.print(), 150);
+    navigate(`/struk/${tx.id}`);
   };
 
   const handleExportCSV = () => {
@@ -98,10 +94,9 @@ export default function RiwayatTransaksi({ transactions, setTransactions, servic
     return idx < STATUS_OPTIONS.length - 1 ? STATUS_OPTIONS[idx + 1] : current;
   };
 
-  /* ── Action button ── */
   const ActionBtn = ({ onClick, title, color, hoverBg, children }) => (
     <button onClick={onClick} title={title} style={{
-      width: 30, height: 30, borderRadius: 7, border: 'none', cursor: 'pointer',
+      width: 30, height: 30, borderRadius: 8, border: '1.5px solid transparent', cursor: 'pointer',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       background: 'transparent', color,
     }}
@@ -115,8 +110,8 @@ export default function RiwayatTransaksi({ transactions, setTransactions, servic
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-      {/* ── Toolbar ── */}
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+      {/* Toolbar */}
+      <div className="card" style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', padding: '14px 18px' }}>
         {/* Search */}
         <div style={{ position: 'relative', flex: '1 1 220px', minWidth: 0 }}>
           <Search size={14} style={{
@@ -148,7 +143,7 @@ export default function RiwayatTransaksi({ transactions, setTransactions, servic
           className="field-input"
           style={{
             width: 148, flexShrink: 0, appearance: 'none',
-            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
+            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236c757d' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
             backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center',
             paddingRight: 32,
           }}
@@ -163,7 +158,7 @@ export default function RiwayatTransaksi({ transactions, setTransactions, servic
         </button>
       </div>
 
-      {/* ── Table Card ── */}
+      {/* Table Card */}
       <div className="card" style={{ overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
@@ -172,8 +167,8 @@ export default function RiwayatTransaksi({ transactions, setTransactions, servic
                 {['No. Invoice','Tanggal','Pelanggan','Layanan','Berat','Total','Status','Aksi'].map((h) => (
                   <th key={h} style={{
                     padding: '11px 16px', textAlign: 'left',
-                    fontSize: 11, fontWeight: 600, textTransform: 'uppercase',
-                    letterSpacing: '0.05em', color: 'var(--text-3)',
+                    fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
+                    letterSpacing: '0.06em', color: 'var(--text-3)',
                     whiteSpace: 'nowrap',
                   }}>
                     {h}
@@ -197,7 +192,7 @@ export default function RiwayatTransaksi({ transactions, setTransactions, servic
                     onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface-2)'}
                     onMouseLeave={(e) => e.currentTarget.style.background = 'var(--surface)'}
                   >
-                    <td style={{ padding: '12px 16px', fontFamily: 'monospace', fontSize: 12, fontWeight: 600, color: 'var(--blue)', whiteSpace: 'nowrap' }}>
+                    <td style={{ padding: '12px 16px', fontFamily: 'monospace', fontSize: 12, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap' }}>
                       {t.id}
                     </td>
                     <td style={{ padding: '12px 16px', color: 'var(--text-2)', whiteSpace: 'nowrap', fontSize: 12 }}>
@@ -234,7 +229,7 @@ export default function RiwayatTransaksi({ transactions, setTransactions, servic
                         <ActionBtn onClick={() => handlePrintReceipt(t)} title="Cetak Struk" color="var(--text-2)" hoverBg="var(--surface-2)">
                           <Printer size={14} />
                         </ActionBtn>
-                        <ActionBtn onClick={() => { setEditTx(t); setEditStatus(t.status); }} title="Edit Status" color="var(--blue)" hoverBg="var(--blue-bg)">
+                        <ActionBtn onClick={() => { setEditTx(t); setEditStatus(t.status); }} title="Edit Status" color="var(--text)" hoverBg="var(--accent-bg)">
                           <Edit3 size={14} />
                         </ActionBtn>
                         <ActionBtn onClick={() => handleDeleteClick(t.id)} title="Hapus" color="var(--red)" hoverBg="var(--red-bg)">
@@ -256,38 +251,12 @@ export default function RiwayatTransaksi({ transactions, setTransactions, servic
           fontSize: 11, color: 'var(--text-3)',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         }}>
-          <span>Menampilkan <strong style={{ color: 'var(--text-2)' }}>{filtered.length}</strong> dari <strong style={{ color: 'var(--text-2)' }}>{transactions.length}</strong> transaksi</span>
+          <span>Menampilkan <strong style={{ color: 'var(--text)' }}>{filtered.length}</strong> dari <strong style={{ color: 'var(--text)' }}>{transactions.length}</strong> transaksi</span>
           <span>Klik badge status untuk mengubah status</span>
         </div>
       </div>
 
-      {/* ── Print Portal ── */}
-      {showReceipt && selectedTx && (
-        <PrintReceipt transaction={selectedTx} settings={settings} />
-      )}
-
-      {/* ── Receipt Modal ── */}
-      <Modal
-        isOpen={showReceipt && !!selectedTx}
-        onClose={() => setShowReceipt(false)}
-        title={selectedTx ? `Struk ${selectedTx.id} - ${selectedTx.pelanggan?.nama || ''}` : 'Struk'}
-        maxWidth="420px"
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <button className="btn btn-primary" onClick={handleDoPrint} style={{ padding: '7px 14px', fontSize: 12 }}>
-              <Printer size={14} /> Cetak
-            </button>
-          </div>
-          <div style={{ padding: 20, background: 'var(--surface-2)', display: 'flex', justifyContent: 'center', borderRadius: 8 }}>
-            <div style={{ background: '#fff', borderRadius: 8, padding: 8, boxShadow: '0 2px 12px rgba(0,0,0,0.1)' }}>
-              {selectedTx && <ReceiptPreview transaction={selectedTx} settings={settings} />}
-            </div>
-          </div>
-        </div>
-      </Modal>
-
-      {/* ── Edit Modal ── */}
+      {/* Edit Modal */}
       <Modal isOpen={!!editTx} onClose={() => setEditTx(null)} title={`Edit Status — ${editTx?.id}`} maxWidth="360px">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
@@ -298,7 +267,7 @@ export default function RiwayatTransaksi({ transactions, setTransactions, servic
               className="field-input"
               style={{
                 appearance: 'none',
-                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236c757d' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
                 backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center', paddingRight: 32,
               }}
             >

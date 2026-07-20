@@ -1,14 +1,13 @@
 /* ─────────────────────────────────────────
    UI.jsx  –  shared components
    All styling via CSS variables (index.css)
-───────────────────────────────────────── */
+ ───────────────────────────────────────── */
 
-// ── StatusBadge ──────────────────────────
 export function StatusBadge({ status }) {
   const map = {
-    Proses:  { bg: 'var(--amber-bg)',  color: 'var(--amber)',  dot: 'var(--amber)' },
-    Selesai: { bg: 'var(--green-bg)',  color: 'var(--green)',  dot: 'var(--green)' },
-    Diambil: { bg: 'var(--surface-2)', color: 'var(--text-3)', dot: 'var(--text-3)' },
+    Proses:  { bg: 'var(--amber-bg)',  color: 'var(--amber)',  border: 'var(--amber-border)', dot: 'var(--amber)' },
+    Selesai: { bg: 'var(--green-bg)',  color: 'var(--green)',  border: 'var(--green-border)', dot: 'var(--green)' },
+    Diambil: { bg: 'var(--surface-2)', color: 'var(--text-3)', border: 'var(--border)', dot: 'var(--text-3)' },
   };
   const s = map[status] || map.Proses;
   return (
@@ -17,6 +16,7 @@ export function StatusBadge({ status }) {
       padding: '3px 10px', borderRadius: 99,
       fontSize: 11, fontWeight: 600,
       background: s.bg, color: s.color,
+      border: `1px solid ${s.border}`,
     }}>
       <span style={{ width: 6, height: 6, borderRadius: '50%', background: s.dot, flexShrink: 0 }} />
       {status}
@@ -24,7 +24,6 @@ export function StatusBadge({ status }) {
   );
 }
 
-// ── Card ─────────────────────────────────
 export function Card({ children, className = '', style = {}, ...props }) {
   return (
     <div className={`card ${className}`} style={style} {...props}>
@@ -33,13 +32,12 @@ export function Card({ children, className = '', style = {}, ...props }) {
   );
 }
 
-// ── StatCard ─────────────────────────────
-export function StatCard({ icon: Icon, label, value, sub, color = 'var(--blue)', iconBg = 'var(--blue-bg)' }) {
+export function StatCard({ icon: Icon, label, value, sub, color = 'var(--text)', iconBg = 'var(--accent-bg)' }) {
   return (
     <div className="card" style={{ padding: '18px 20px' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
         <div style={{ minWidth: 0, flex: 1 }}>
-          <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-3)', marginBottom: 6 }}>
+          <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', marginBottom: 6 }}>
             {label}
           </p>
           <p style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', lineHeight: 1, letterSpacing: '-0.02em' }}>
@@ -47,12 +45,12 @@ export function StatCard({ icon: Icon, label, value, sub, color = 'var(--blue)',
           </p>
           {sub && (
             <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--amber)', marginTop: 6 }}>
-              ⚠ {sub}
+              {sub}
             </p>
           )}
         </div>
         {Icon && (
-          <div className="stat-icon" style={{ background: iconBg }}>
+          <div className="stat-icon" style={{ background: iconBg, border: '1.5px solid var(--border)' }}>
             <Icon size={19} style={{ color }} />
           </div>
         )}
@@ -61,7 +59,6 @@ export function StatCard({ icon: Icon, label, value, sub, color = 'var(--blue)',
   );
 }
 
-// ── Button ───────────────────────────────
 export function Button({ children, variant = 'primary', className = '', style = {}, ...props }) {
   const variantClass = {
     primary: 'btn-primary',
@@ -78,7 +75,6 @@ export function Button({ children, variant = 'primary', className = '', style = 
   );
 }
 
-// ── Input ────────────────────────────────
 export function Input({ label, className = '', style = {}, ...props }) {
   return (
     <div className={className} style={style}>
@@ -88,7 +84,6 @@ export function Input({ label, className = '', style = {}, ...props }) {
   );
 }
 
-// ── Select ───────────────────────────────
 export function Select({ label, children, className = '', style = {}, ...props }) {
   return (
     <div className={className} style={style}>
@@ -96,7 +91,7 @@ export function Select({ label, children, className = '', style = {}, ...props }
       <select
         className="field-input"
         style={{ appearance: 'none', cursor: 'pointer', paddingRight: 32,
-          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236c757d' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
           backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center',
         }}
         {...props}
@@ -107,7 +102,6 @@ export function Select({ label, children, className = '', style = {}, ...props }
   );
 }
 
-// ── Textarea ─────────────────────────────
 export function Textarea({ label, className = '', style = {}, ...props }) {
   return (
     <div className={className} style={style}>

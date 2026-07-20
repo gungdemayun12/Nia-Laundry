@@ -5,11 +5,9 @@ import Swal from 'sweetalert2';
 import Modal from '../components/Modal';
 import { formatRupiah, generateId } from '../utils/helpers';
 
-/* ── Section wrapper ── */
-function Section({ icon: Icon, iconColor = 'var(--blue)', iconBg = 'var(--blue-bg)', title, description, action, children }) {
+function Section({ icon: Icon, iconBg = 'var(--accent-bg)', title, description, action, children }) {
   return (
     <div className="card" style={{ overflow: 'hidden' }}>
-      {/* Header */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '16px 20px', borderBottom: '1px solid var(--border)',
@@ -18,8 +16,9 @@ function Section({ icon: Icon, iconColor = 'var(--blue)', iconBg = 'var(--blue-b
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{
             width: 34, height: 34, borderRadius: 9,
-            background: iconBg, color: iconColor,
+            background: iconBg, color: 'var(--text)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            border: '1.5px solid var(--accent-border)',
           }}>
             <Icon size={16} />
           </div>
@@ -70,28 +69,29 @@ export default function Pengaturan({ services, setServices, settings, setSetting
       text: 'Layanan ini akan dihapus permanen. Riwayat transaksi yang sudah ada tidak terpengaruh.',
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#ef4444',
-      cancelButtonColor: '#64748b',
+      confirmButtonColor: 'var(--red)',
+      cancelButtonColor: 'var(--border-2)',
       confirmButtonText: 'Ya, Hapus!',
       cancelButtonText: 'Batal',
-      showCloseButton: true
+      showCloseButton: true,
+      background: 'var(--surface)',
+      color: 'var(--text)',
     }).then((result) => {
       if (result.isConfirmed) {
         handleDelete(id);
-        Swal.fire({ title: 'Terhapus!', text: 'Layanan berhasil dihapus.', icon: 'success', confirmButtonColor: '#16a34a', showCloseButton: true });
+        Swal.fire({ title: 'Terhapus!', text: 'Layanan berhasil dihapus.', icon: 'success', confirmButtonColor: 'var(--text)', showCloseButton: true, background: 'var(--surface)', color: 'var(--text)' });
       }
     });
   };
 
-  /* ── tiny icon btn ── */
   const IconBtn = ({ onClick, color, hoverBg, children, title }) => (
     <button onClick={onClick} title={title} style={{
-      width: 32, height: 32, borderRadius: 8, border: 'none', cursor: 'pointer',
+      width: 32, height: 32, borderRadius: 8, border: '1.5px solid transparent', cursor: 'pointer',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'transparent', color, transition: 'background 0.12s',
+      background: 'transparent', color, transition: 'all 0.12s',
     }}
-      onMouseEnter={(e) => e.currentTarget.style.background = hoverBg}
-      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+      onMouseEnter={(e) => { e.currentTarget.style.background = hoverBg; e.currentTarget.style.borderColor = 'var(--accent-border)'; }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent'; }}
     >
       {children}
     </button>
@@ -100,7 +100,7 @@ export default function Pengaturan({ services, setServices, settings, setSetting
   return (
     <div style={{ maxWidth: 720, display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-      {/* ── Layanan & Harga ── */}
+      {/* Layanan & Harga */}
       <Section
         icon={Tag}
         title="Layanan & Harga"
@@ -117,7 +117,6 @@ export default function Pengaturan({ services, setServices, settings, setSetting
           </p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-            {/* Table header */}
             <div style={{
               display: 'grid', gridTemplateColumns: '1fr 160px 80px',
               padding: '8px 12px', borderRadius: 8,
@@ -125,7 +124,7 @@ export default function Pengaturan({ services, setServices, settings, setSetting
               marginBottom: 8,
             }}>
               {['Nama Layanan','Harga / kg',''].map((h, i) => (
-                <span key={i} style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-3)' }}>{h}</span>
+                <span key={i} style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-3)' }}>{h}</span>
               ))}
             </div>
 
@@ -133,17 +132,18 @@ export default function Pengaturan({ services, setServices, settings, setSetting
               <div key={s.id} style={{
                 display: 'grid', gridTemplateColumns: '1fr 160px 80px',
                 alignItems: 'center', padding: '11px 12px', borderRadius: 8,
-                background: idx % 2 === 0 ? 'transparent' : 'var(--surface-2)',
-                border: '1px solid transparent',
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                borderBottom: idx < services.length - 1 ? '1px solid var(--border)' : '1px solid var(--border)',
                 transition: 'background 0.1s, border-color 0.1s',
               }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--blue-bg)'; e.currentTarget.style.borderColor = 'var(--blue-border)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = idx % 2 === 0 ? 'transparent' : 'var(--surface-2)'; e.currentTarget.style.borderColor = 'transparent'; }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--surface-2)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--surface)'; }}
               >
                 <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{s.nama}</span>
-                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)' }}>{formatRupiah(s.hargaPerKg)}<span style={{ fontSize: 11, fontWeight: 400, color: 'var(--text-3)' }}> / kg</span></span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{formatRupiah(s.hargaPerKg)}<span style={{ fontSize: 11, fontWeight: 400, color: 'var(--text-3)' }}> / kg</span></span>
                 <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
-                  <IconBtn onClick={() => openEdit(s)} color="var(--blue)" hoverBg="var(--blue-bg)" title="Edit">
+                  <IconBtn onClick={() => openEdit(s)} color="var(--text)" hoverBg="var(--accent-bg)" title="Edit">
                     <Edit3 size={14} />
                   </IconBtn>
                   <IconBtn onClick={() => handleDeleteClick(s.id)} color="var(--red)" hoverBg="var(--red-bg)" title="Hapus">
@@ -156,10 +156,9 @@ export default function Pengaturan({ services, setServices, settings, setSetting
         )}
       </Section>
 
-      {/* ── Info Toko ── */}
+      {/* Info Toko */}
       <Section
         icon={Store}
-        iconColor="var(--green)"
         iconBg="var(--green-bg)"
         title="Info Toko"
         description="Informasi yang tampil di struk cetak"
@@ -202,17 +201,17 @@ export default function Pengaturan({ services, setServices, settings, setSetting
                 <label key={w} style={{
                   display: 'flex', alignItems: 'center', gap: 8,
                   padding: '9px 16px', borderRadius: 10, cursor: 'pointer',
-                  border: `1.5px solid ${storeForm.lebarKertas === w ? 'var(--blue)' : 'var(--border)'}`,
-                  background: storeForm.lebarKertas === w ? 'var(--blue-bg)' : 'var(--surface)',
+                  border: `1.5px solid ${storeForm.lebarKertas === w ? 'var(--text)' : 'var(--border)'}`,
+                  background: storeForm.lebarKertas === w ? 'var(--accent-bg)' : 'var(--surface)',
                   transition: 'all 0.12s',
                 }}>
                   <input
                     type="radio" name="lebarKertas" value={w}
                     checked={storeForm.lebarKertas === w}
                     onChange={(e) => setStoreForm({ ...storeForm, lebarKertas: e.target.value })}
-                    style={{ accentColor: 'var(--blue)' }}
+                    style={{ accentColor: 'var(--text)' }}
                   />
-                  <span style={{ fontSize: 13, fontWeight: 600, color: storeForm.lebarKertas === w ? 'var(--blue)' : 'var(--text-2)' }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: storeForm.lebarKertas === w ? 'var(--text)' : 'var(--text-2)' }}>
                     {w}
                   </span>
                 </label>
@@ -233,11 +232,10 @@ export default function Pengaturan({ services, setServices, settings, setSetting
         </div>
       </Section>
 
-      {/* ── Backup & Restore ── */}
+      {/* Backup & Restore */}
       <Section
         icon={Database}
-        iconColor="var(--violet)"
-        iconBg="var(--violet-bg)"
+        iconBg="var(--accent-bg)"
         title="Backup & Restore"
         description="Ekspor atau impor semua data POS"
       >
@@ -254,7 +252,7 @@ export default function Pengaturan({ services, setServices, settings, setSetting
         </div>
       </Section>
 
-      {/* ── Service Modal ── */}
+      {/* Service Modal */}
       <Modal
         isOpen={showModal}
         onClose={() => { setShowModal(false); setEditService(null); }}

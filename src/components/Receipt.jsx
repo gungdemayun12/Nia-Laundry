@@ -12,69 +12,79 @@ const Receipt = forwardRef(function Receipt({ transaction, settings }, ref) {
       className={`receipt-print ${paperClass}`}
       style={{
         fontFamily: "'Courier New', Courier, monospace",
-        fontSize: '12px',
+        fontSize: '11px',
         lineHeight: '1.4',
         color: '#000',
         background: '#fff',
         width: settings?.lebarKertas === '80mm' ? '80mm' : '58mm',
-        padding: '2mm',
+        padding: '3mm 2mm',
         boxSizing: 'border-box',
         margin: '0 auto',
       }}
     >
       {/* Header */}
-      <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-        <div style={{ borderTop: '2px dashed #000', borderBottom: '2px dashed #000', padding: '4px 0', marginBottom: '4px' }}>
-          <div style={{ fontWeight: 'bold', fontSize: '16px' }}>
+      <div style={{ textAlign: 'center', marginBottom: '6px' }}>
+        <div style={{ borderTop: '2px solid #000', borderBottom: '2px solid #000', padding: '3px 0', marginBottom: '3px' }}>
+          <div style={{ fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.02em' }}>
             {settings?.namaToko || 'LAUNDRY'}
           </div>
           {settings?.alamat && (
-            <div style={{ fontSize: '11px', marginTop: '2px' }}>{settings.alamat}</div>
+            <div style={{ fontSize: '10px', marginTop: '1px' }}>{settings.alamat}</div>
           )}
           {settings?.telp && (
-            <div style={{ fontSize: '11px' }}>{settings.telp}</div>
+            <div style={{ fontSize: '10px' }}>{settings.telp}</div>
           )}
         </div>
       </div>
 
       {/* Invoice Info */}
-      <div style={{ marginBottom: '8px', fontSize: '11px' }}>
+      <div style={{ marginBottom: '6px', fontSize: '10px' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <tbody>
             <tr>
-              <td style={{ width: '60px' }}>Struk</td>
+              <td style={{ width: '55px', fontWeight: 600 }}>No. Struk</td>
               <td>: {transaction.id}</td>
             </tr>
             <tr>
-              <td>Tanggal</td>
+              <td style={{ fontWeight: 600 }}>Tanggal</td>
               <td>: {formatDateTime(transaction.tanggal)}</td>
             </tr>
             <tr>
-              <td>Kasir</td>
+              <td style={{ fontWeight: 600 }}>Kasir</td>
               <td>: Admin</td>
             </tr>
             <tr>
-              <td>Pelanggan</td>
+              <td style={{ fontWeight: 600 }}>Pelanggan</td>
               <td>: {transaction.pelanggan?.nama || '-'}</td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <div style={{ borderTop: '1px dashed #000', margin: '6px 0' }}></div>
+      <div style={{ borderTop: '1px solid #000', margin: '5px 0' }}></div>
 
       {/* Items */}
-      <div style={{ fontSize: '11px', marginBottom: '6px' }}>
+      <div style={{ fontSize: '10px', marginBottom: '5px' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr style={{ borderBottom: '1px solid #000' }}>
+              <th style={{ textAlign: 'left', paddingBottom: 2 }}>Item</th>
+              <th style={{ textAlign: 'right', paddingBottom: 2 }}>Harga</th>
+              <th style={{ textAlign: 'right', paddingBottom: 2 }}>Sub</th>
+            </tr>
+          </thead>
           <tbody>
             {transaction.items?.map((item, i) => (
               <tr key={i}>
-                <td colSpan={2} style={{ paddingBottom: '4px' }}>
+                <td style={{ padding: '3px 0', borderBottom: '1px dashed #ccc' }}>
                   <div style={{ fontWeight: 'bold' }}>{item.layanan}</div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span>{item.berat} kg x {formatRupiah(item.hargaPerKg)}</span>
-                    <span>{formatRupiah(item.subtotal)}</span>
-                  </div>
+                  <div style={{ fontSize: '9px', color: '#666' }}>{item.berat} kg x {formatRupiah(item.hargaPerKg)}</div>
+                </td>
+                <td style={{ padding: '3px 0', borderBottom: '1px dashed #ccc', textAlign: 'right', fontSize: '9px', color: '#666' }}>
+                  {formatRupiah(item.hargaPerKg)}
+                </td>
+                <td style={{ padding: '3px 0', borderBottom: '1px dashed #ccc', textAlign: 'right', fontWeight: 600 }}>
+                  {formatRupiah(item.subtotal)}
                 </td>
               </tr>
             ))}
@@ -82,59 +92,61 @@ const Receipt = forwardRef(function Receipt({ transaction, settings }, ref) {
         </table>
       </div>
 
-      <div style={{ borderTop: '1px dashed #000', margin: '6px 0' }}></div>
+      <div style={{ borderTop: '1px solid #000', margin: '5px 0' }}></div>
 
       {/* Totals */}
-      <div style={{ fontSize: '11px', marginBottom: '8px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+      <div style={{ fontSize: '10px', marginBottom: '6px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
           <span>Total Berat</span>
           <span>{transaction.totalBerat} kg</span>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
           <span>Subtotal</span>
           <span>{formatRupiah(transaction.totalBayar + transaction.diskon)}</span>
         </div>
         {transaction.diskon > 0 && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
             <span>Diskon</span>
             <span>-{formatRupiah(transaction.diskon)}</span>
           </div>
         )}
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          fontWeight: 'bold', 
-          fontSize: '14px', 
-          marginTop: '6px',
-          paddingTop: '6px',
-          borderTop: '1px dashed #000'
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          fontWeight: 'bold',
+          fontSize: '13px',
+          marginTop: 4,
+          paddingTop: 4,
+          borderTop: '2px solid #000',
         }}>
           <span>TOTAL</span>
           <span>{formatRupiah(transaction.totalBayar)}</span>
         </div>
       </div>
 
-      <div style={{ borderTop: '1px dashed #000', margin: '6px 0' }}></div>
+      <div style={{ borderTop: '1px solid #000', margin: '5px 0' }}></div>
 
       {/* Status & Estimation */}
-      <div style={{ fontSize: '11px', marginBottom: '8px' }}>
+      <div style={{ fontSize: '10px', marginBottom: '6px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span>Status: <strong>{transaction.status}</strong></span>
+          <span>Status</span>
+          <span style={{ fontWeight: 'bold' }}>{transaction.status}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span>Estimasi: <strong>{formatDate(transaction.estimasiSelesai)}</strong></span>
+          <span>Estimasi</span>
+          <span style={{ fontWeight: 'bold' }}>{formatDate(transaction.estimasiSelesai)}</span>
         </div>
         {transaction.catatan && (
-          <div style={{ marginTop: '4px' }}>Catatan: {transaction.catatan}</div>
+          <div style={{ marginTop: 3, padding: '3px 0', borderTop: '1px dashed #ccc' }}>Catatan: {transaction.catatan}</div>
         )}
       </div>
 
       {/* Footer */}
-      <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '10px' }}>
+      <div style={{ textAlign: 'center', marginTop: '8px', fontSize: '9px' }}>
         {(settings?.footerStruk || 'Terima kasih telah mempercayakan laundry Anda pada kami!').split('\n').map((line, i) => (
-          <div key={i} style={{ marginBottom: '2px' }}>{line}</div>
+          <div key={i} style={{ marginBottom: '1px' }}>{line}</div>
         ))}
-        <div style={{ marginTop: '8px', borderTop: '2px dashed #000', paddingTop: '4px' }}>
+        <div style={{ marginTop: '6px', borderTop: '2px solid #000', paddingTop: '3px' }}>
           *** SIMPAN STRUK INI ***
         </div>
       </div>

@@ -1,23 +1,69 @@
 import { useState, useMemo } from 'react';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend,
+  Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
 } from 'recharts';
 import {
-  TrendingUp, Download, Calendar, BarChart3, Activity,
+  Download, Activity, ArrowUpRight, ArrowDownRight, Printer,
 } from 'lucide-react';
-import { Card, StatCard, Button, Input } from '../components/UI';
-import { formatRupiah, exportCSV } from '../utils/helpers';
+import { formatRupiah, exportCSV, getStartOfDay, getStartOfWeek, getStartOfMonth } from '../utils/helpers';
 
-const CHART_COLORS = ['#2563eb', '#7c3aed', '#0891b2', '#16a34a', '#d97706'];
+const CHART_COLORS = ['#212529', '#495057', '#6c757d', '#adb5bd', '#ced4da'];
 
-export default function Laporan({ transactions, services }) {
+const PERIOD_PRESETS = [
+  { key: 'today', label: 'Hari Ini' },
+  { key: 'week', label: 'Minggu Ini' },
+  { key: 'month', label: 'Bulan Ini' },
+  { key: 'all', label: 'Semua' },
+];
+
+function QuickStat({ label, value, sub, trendUp }) {
+  return (
+    <div className="card" style={{ padding: '16px 18px' }}>
+      <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', marginBottom: 6 }}>
+        {label}
+      </p>
+      <p style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', lineHeight: 1, letterSpacing: '-0.02em' }}>
+        {value}
+      </p>
+      {sub && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 6 }}>
+          {trendUp ? <ArrowUpRight size={13} style={{ color: 'var(--green)' }} /> : <ArrowDownRight size={13} style={{ color: 'var(--red)' }} />}
+          <span style={{ fontSize: 11, fontWeight: 600, color: trendUp ? 'var(--green)' : 'var(--red)' }}>
+            {sub}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function Laporan({ transactions }) {
   const [chartType, setChartType] = useState('bar');
   const [period, setPeriod] = useState('daily');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [preset, setPreset] = useState('all');
 
-  // Filtered transactions by date range
+  const now = useMemo(() => new Date(), []);
+
+  const applyPreset = (key) => {
+    setPreset(key);
+    if (key === 'today') {
+      setDateFrom(getStartOfDay(now).toISOString().split('T')[0]);
+      setDateTo(getStartOfDay(now).toISOString().split('T')[0]);
+    } else if (key === 'week') {
+      setDateFrom(getStartOfWeek(now).toISOString().split('T')[0]);
+      setDateTo(now.toISOString().split('T')[0]);
+    } else if (key === 'month') {
+      setDateFrom(getStartOfMonth(now).toISOString().split('T')[0]);
+      setDateTo(now.toISOString().split('T')[0]);
+    } else {
+      setDateFrom('');
+      setDateTo('');
+    }
+  };
+
   const filteredTx = useMemo(() => {
     return transactions.filter((t) => {
       const d = new Date(t.tanggal);
@@ -31,7 +77,6 @@ export default function Laporan({ transactions, services }) {
     });
   }, [transactions, dateFrom, dateTo]);
 
-  // Stats
   const stats = useMemo(() => {
     const totalRevenue = filteredTx.reduce((s, t) => s + (t.totalBayar || 0), 0);
     const totalKg = filteredTx.reduce((s, t) => s + (t.totalBerat || 0), 0);
@@ -40,7 +85,42 @@ export default function Laporan({ transactions, services }) {
     return { totalRevenue, totalKg, avgTransaction, count: filteredTx.length };
   }, [filteredTx]);
 
-  // Chart data
+  const prevPeriodStats = useMemo(() => {
+    let from, to;
+    if (preset === 'today') {
+      const yesterday = new Date(now); yesterday.setDate(yesterday.getDate() - 1);
+      from = getStartOfDay(yesterday).toISOString().split('T')[0];
+      to = from;
+    } else if (preset === 'week') {
+      const lastWeek = new Date(now); lastWeek.setDate(lastWeek.getDate() - 7);
+      from = getStartOfWeek(lastWeek).toISOString().split('T')[0];
+      to = new Date(getStartOfWeek(lastWeek)); to.setDate(to.getDate() + 6);
+      to = to.toISOString().split('T')[0];
+    } else if (preset === 'month') {
+      const lastMonth = new Date(now); lastMonth.setMonth(lastMonth.getMonth() - 1);
+      from = getStartOfMonth(lastMonth).toISOString().split('T')[0];
+      to = new Date(lastMonth.getFullYear(), lastMonth.getMonth() + 1, 0).toISOString().split('T')[0];
+    } else {
+      return null;
+    }
+
+    const prev = transactions.filter((t) => {
+      const d = new Date(t.tanggal);
+      if (from && d < new Date(from)) return false;
+      if (to) {
+        const te = new Date(to); te.setHours(23, 59, 59, 999);
+        if (d > te) return false;
+      }
+      return true;
+    });
+
+    return {
+      revenue: prev.reduce((s, t) => s + (t.totalBayar || 0), 0),
+      count: prev.length,
+      kg: prev.reduce((s, t) => s + (t.totalBerat || 0), 0),
+    };
+  }, [transactions, preset, now]);
+
   const chartData = useMemo(() => {
     const map = {};
 
@@ -69,7 +149,6 @@ export default function Laporan({ transactions, services }) {
     return Object.values(map).sort((a, b) => a.period.localeCompare(b.period));
   }, [filteredTx, period]);
 
-  // Service popularity (pie chart)
   const serviceData = useMemo(() => {
     const map = {};
     filteredTx.forEach((t) => {
@@ -111,79 +190,118 @@ export default function Laporan({ transactions, services }) {
     window.print();
   };
 
+  const getTrend = (current, previous) => {
+    if (!previous || previous === 0) return { value: '-', up: true };
+    const diff = ((current - previous) / previous) * 100;
+    return { value: `${Math.abs(diff).toFixed(1)}%`, up: diff >= 0 };
+  };
+
+  const revenueTrend = getTrend(stats.totalRevenue, prevPeriodStats?.revenue);
+  const countTrend = getTrend(stats.count, prevPeriodStats?.count);
+  const kgTrend = getTrend(stats.totalKg, prevPeriodStats?.kg);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {/* Filters */}
-      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-        <div>
-          <label className="field-label">Dari Tanggal</label>
-          <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="field-input" style={{ width: 160 }} />
-        </div>
-        <div>
-          <label className="field-label">Sampai Tanggal</label>
-          <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="field-input" style={{ width: 160 }} />
-        </div>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 10 }}>
-          <button className="btn btn-secondary" onClick={handleExport} style={{ padding: '9px 16px', fontSize: 12 }}>
-            <Download size={14} /> Export CSV
-          </button>
-          <button className="btn btn-secondary" onClick={handlePrintReport} style={{ padding: '9px 16px', fontSize: 12 }}>
-            <Download size={14} /> Print
-          </button>
-        </div>
-      </div>
-
-      {/* Stats Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14 }} className="laporan-stat-grid">
-        <StatCard
-          icon={TrendingUp}
+      {/* Quick Stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }} className="quick-stats-grid">
+        <QuickStat
           label="Total Pendapatan"
           value={formatRupiah(stats.totalRevenue)}
-          color="var(--blue)" iconBg="var(--blue-bg)"
+          sub={prevPeriodStats ? `${revenueTrend.value} dari periode sebelumnya` : undefined}
+          trendUp={revenueTrend.up}
         />
-        <StatCard
-          icon={BarChart3}
+        <QuickStat
           label="Total Transaksi"
           value={stats.count}
-          color="var(--violet)" iconBg="var(--violet-bg)"
+          sub={prevPeriodStats ? `${countTrend.value} dari periode sebelumnya` : undefined}
+          trendUp={countTrend.up}
         />
-        <StatCard
-          icon={Activity}
+        <QuickStat
           label="Total Kg Dicuci"
           value={`${stats.totalKg.toFixed(1)} kg`}
-          color="var(--cyan)" iconBg="var(--cyan-bg)"
+          sub={prevPeriodStats ? `${kgTrend.value} dari periode sebelumnya` : undefined}
+          trendUp={kgTrend.up}
         />
-        <StatCard
-          icon={Calendar}
-          label="Rata-rata / Transaksi"
-          value={formatRupiah(Math.round(stats.avgTransaction))}
-          color="var(--green)" iconBg="var(--green-bg)"
-        />
+      </div>
+
+      {/* Filters */}
+      <div className="card" style={{ padding: '16px 20px' }}>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+          {/* Period Presets */}
+          <div style={{ display: 'flex', gap: 4, padding: 4, borderRadius: 10, background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+            {PERIOD_PRESETS.map((p) => (
+              <button
+                key={p.key}
+                onClick={() => applyPreset(p.key)}
+                style={{
+                  padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                  fontSize: 12, fontWeight: 600, transition: 'all 0.15s',
+                  background: preset === p.key ? 'var(--text)' : 'transparent',
+                  color: preset === p.key ? '#fff' : 'var(--text-3)',
+                }}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Custom Date Range */}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => { setDateFrom(e.target.value); setPreset('custom'); }}
+              className="field-input"
+              style={{ width: 140, padding: '6px 10px', fontSize: 12 }}
+            />
+            <span style={{ color: 'var(--text-3)', fontSize: 12 }}>s/d</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => { setDateTo(e.target.value); setPreset('custom'); }}
+              className="field-input"
+              style={{ width: 140, padding: '6px 10px', fontSize: 12 }}
+            />
+          </div>
+
+          {/* Actions */}
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+            <button className="btn btn-secondary" onClick={handleExport} style={{ padding: '7px 14px', fontSize: 12 }}>
+              <Download size={14} /> Export CSV
+            </button>
+            <button className="btn btn-secondary" onClick={handlePrintReport} style={{ padding: '7px 14px', fontSize: 12 }}>
+              <Printer size={14} /> Print
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Revenue Chart */}
-      <div className="card" style={{ padding: '20px 24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
-          <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>Grafik Pendapatan</p>
+      <div className="card" style={{ padding: '22px 26px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>
+          <div>
+            <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>Grafik Pendapatan</p>
+            <p style={{ fontSize: 11, color: 'var(--text-3)' }}>
+              {dateFrom && dateTo ? `${dateFrom} - ${dateTo}` : 'Semua data'}
+            </p>
+          </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            {/* Period tabs */}
             <div style={{ display: 'flex', gap: 4, padding: 4, borderRadius: 10, background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
               {[['daily','Harian'],['weekly','Mingguan'],['monthly','Bulanan'],['yearly','Tahunan']].map(([k,l]) => (
                 <button key={k} onClick={() => setPeriod(k)} style={{
                   padding: '5px 12px', borderRadius: 7, border: 'none', cursor: 'pointer',
                   fontSize: 12, fontWeight: 600, transition: 'all 0.15s',
-                  background: period === k ? 'var(--blue)' : 'transparent',
+                  background: period === k ? 'var(--text)' : 'transparent',
                   color: period === k ? '#fff' : 'var(--text-3)',
                 }}>{l}</button>
               ))}
             </div>
-            {/* Chart type */}
             <div style={{ display: 'flex', gap: 4, padding: 4, borderRadius: 10, background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
               {[['bar','Bar'],['line','Line']].map(([k,l]) => (
                 <button key={k} onClick={() => setChartType(k)} style={{
                   padding: '5px 12px', borderRadius: 7, border: 'none', cursor: 'pointer',
                   fontSize: 12, fontWeight: 600, transition: 'all 0.15s',
-                  background: chartType === k ? 'var(--blue)' : 'transparent',
+                  background: chartType === k ? 'var(--text)' : 'transparent',
                   color: chartType === k ? '#fff' : 'var(--text-3)',
                 }}>{l}</button>
               ))}
@@ -201,8 +319,8 @@ export default function Laporan({ transactions, services }) {
                   <YAxis tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} tick={{ fontSize: 11, fill: 'var(--text-3)' }} axisLine={false} tickLine={false} width={38} />
                   <Tooltip formatter={(v) => [formatRupiah(v), 'Pendapatan']} labelFormatter={formatLabel}
                     contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 12, boxShadow: 'var(--shadow-md)' }}
-                    cursor={{ fill: 'var(--blue-bg)' }} />
-                  <Bar dataKey="pendapatan" fill="var(--blue)" radius={[5,5,0,0]} />
+                    cursor={{ fill: 'var(--accent-bg)' }} />
+                  <Bar dataKey="pendapatan" fill="var(--text)" radius={[6,6,0,0]} />
                 </BarChart>
               ) : (
                 <LineChart data={chartData}>
@@ -211,7 +329,7 @@ export default function Laporan({ transactions, services }) {
                   <YAxis tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} tick={{ fontSize: 11, fill: 'var(--text-3)' }} axisLine={false} tickLine={false} width={38} />
                   <Tooltip formatter={(v) => [formatRupiah(v), 'Pendapatan']} labelFormatter={formatLabel}
                     contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 12, boxShadow: 'var(--shadow-md)' }} />
-                  <Line dataKey="pendapatan" stroke="var(--blue)" strokeWidth={2.5} dot={{ fill: 'var(--blue)', r: 4, strokeWidth: 0 }} activeDot={{ r: 6 }} />
+                  <Line type="monotone" dataKey="pendapatan" stroke="var(--text)" strokeWidth={2.5} dot={{ fill: 'var(--text)', r: 4, strokeWidth: 0 }} activeDot={{ r: 6 }} />
                 </LineChart>
               )}
             </ResponsiveContainer>
@@ -223,7 +341,7 @@ export default function Laporan({ transactions, services }) {
         )}
       </div>
 
-      {/* Service Popularity */}
+      {/* Service Popularity + Detail */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }} className="laporan-bottom">
         <div className="card" style={{ padding: '20px 24px' }}>
           <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>Layanan Paling Laris</p>
@@ -260,7 +378,7 @@ export default function Laporan({ transactions, services }) {
                       <p style={{ fontSize: 11, color: 'var(--text-3)' }}>{s.count} penggunaan</p>
                     </div>
                   </div>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--blue)' }}>{formatRupiah(s.revenue)}</p>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{formatRupiah(s.revenue)}</p>
                 </div>
               ))}
             </div>
@@ -270,10 +388,39 @@ export default function Laporan({ transactions, services }) {
         </div>
       </div>
 
+      {/* Average Transaction Stat */}
+      <div className="card" style={{ padding: '20px 24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 9, background: 'var(--accent-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid var(--accent-border)' }}>
+            <Activity size={16} style={{ color: 'var(--text)' }} />
+          </div>
+          <div>
+            <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>Rata-rata per Transaksi</p>
+            <p style={{ fontSize: 11, color: 'var(--text-3)' }}>Berdasarkan {stats.count} transaksi</p>
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }} className="avg-grid">
+          <div style={{ padding: '14px 16px', borderRadius: 10, background: 'var(--surface-2)', border: '1px solid var(--border)', textAlign: 'center' }}>
+            <p style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Rata-rata</p>
+            <p style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)' }}>{formatRupiah(Math.round(stats.avgTransaction))}</p>
+          </div>
+          <div style={{ padding: '14px 16px', borderRadius: 10, background: 'var(--surface-2)', border: '1px solid var(--border)', textAlign: 'center' }}>
+            <p style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Total Kg</p>
+            <p style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)' }}>{stats.totalKg.toFixed(1)} kg</p>
+          </div>
+          <div style={{ padding: '14px 16px', borderRadius: 10, background: 'var(--surface-2)', border: '1px solid var(--border)', textAlign: 'center' }}>
+            <p style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Rata-rata Kg</p>
+            <p style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)' }}>
+              {stats.count > 0 ? (stats.totalKg / stats.count).toFixed(1) : '0'} kg
+            </p>
+          </div>
+        </div>
+      </div>
+
       <style>{`
-        .laporan-stat-grid { grid-template-columns: repeat(4,1fr) !important; }
-        @media (max-width: 900px) { .laporan-stat-grid { grid-template-columns: repeat(2,1fr) !important; } }
-        @media (max-width: 560px) { .laporan-stat-grid { grid-template-columns: 1fr !important; } .laporan-bottom { grid-template-columns: 1fr !important; } }
+        .quick-stats-grid { grid-template-columns: repeat(3,1fr) !important; }
+        @media (max-width: 900px) { .quick-stats-grid { grid-template-columns: 1fr !important; } .laporan-bottom { grid-template-columns: 1fr !important; } .avg-grid { grid-template-columns: 1fr !important; } }
+        @media (max-width: 560px) { .avg-grid { grid-template-columns: 1fr !important; } }
       `}</style>
     </div>
   );
