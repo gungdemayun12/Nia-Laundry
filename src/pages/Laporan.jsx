@@ -1,20 +1,55 @@
 import { useState, useMemo } from 'react';
 import {
-  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
-} from 'recharts';
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+} from 'chart.js';
 import {
-  Download, Activity, ArrowUpRight, ArrowDownRight, Printer,
+  Bar, Line, Pie, Doughnut,
+} from 'react-chartjs-2';
+import {
+  Download, ArrowUpRight, ArrowDownRight, Printer,
 } from 'lucide-react';
 import { formatRupiah, exportCSV, getStartOfDay, getStartOfWeek, getStartOfMonth } from '../utils/helpers';
 
-const CHART_COLORS = ['#212529', '#495057', '#6c757d', '#adb5bd', '#ced4da'];
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
+
+const CHART_COLORS = ['#212529', '#495057', '#6c757d', '#adb5bd', '#ced4da', '#f8f9fa'];
 
 const PERIOD_PRESETS = [
   { key: 'today', label: 'Hari Ini' },
   { key: 'week', label: 'Minggu Ini' },
   { key: 'month', label: 'Bulan Ini' },
   { key: 'all', label: 'Semua' },
+];
+
+const CHART_TYPES = [
+  { key: 'bar', label: 'Bar' },
+  { key: 'line', label: 'Line' },
+];
+
+const PIE_CHART_TYPES = [
+  { key: 'pie', label: 'Pie', component: Pie },
+  { key: 'doughnut', label: 'Donut', component: Doughnut },
 ];
 
 function QuickStat({ label, value, sub, trendUp }) {
@@ -38,12 +73,16 @@ function QuickStat({ label, value, sub, trendUp }) {
   );
 }
 
-export default function Laporan({ transactions }) {
+export default function Laporan({ transactions, services, customers }) {
   const [chartType, setChartType] = useState('bar');
+  const [pieChartType, setPieChartType] = useState('doughnut');
   const [period, setPeriod] = useState('daily');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [preset, setPreset] = useState('all');
+  const [filterService, setFilterService] = useState('');
+  const [filterCustomer, setFilterCustomer] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
 
   const now = useMemo(() => new Date(), []);
 
@@ -66,6 +105,9 @@ export default function Laporan({ transactions }) {
 
   const filteredTx = useMemo(() => {
     return transactions.filter((t) => {
+      if (filterStatus && t.status !== filterStatus) return false;
+      if (filterService && !t.items?.some(i => i.layanan === filterService)) return false;
+      if (filterCustomer && t.pelanggan?.nama !== filterCustomer) return false;
       const d = new Date(t.tanggal);
       if (dateFrom && d < new Date(dateFrom)) return false;
       if (dateTo) {
@@ -75,14 +117,16 @@ export default function Laporan({ transactions }) {
       }
       return true;
     });
-  }, [transactions, dateFrom, dateTo]);
+  }, [transactions, dateFrom, dateTo, filterService, filterCustomer, filterStatus]);
 
   const stats = useMemo(() => {
     const totalRevenue = filteredTx.reduce((s, t) => s + (t.totalBayar || 0), 0);
     const totalKg = filteredTx.reduce((s, t) => s + (t.totalBerat || 0), 0);
     const avgTransaction = filteredTx.length > 0 ? totalRevenue / filteredTx.length : 0;
+    const completedTx = filteredTx.filter(t => t.status === 'Selesai' || t.status === 'Diambil').length;
+    const processTx = filteredTx.filter(t => t.status === 'Proses').length;
 
-    return { totalRevenue, totalKg, avgTransaction, count: filteredTx.length };
+    return { totalRevenue, totalKg, avgTransaction, count: filteredTx.length, completedTx, processTx };
   }, [filteredTx]);
 
   const prevPeriodStats = useMemo(() => {
@@ -105,6 +149,9 @@ export default function Laporan({ transactions }) {
     }
 
     const prev = transactions.filter((t) => {
+      if (filterStatus && t.status !== filterStatus) return false;
+      if (filterService && !t.items?.some(i => i.layanan === filterService)) return false;
+      if (filterCustomer && t.pelanggan?.nama !== filterCustomer) return false;
       const d = new Date(t.tanggal);
       if (from && d < new Date(from)) return false;
       if (to) {
@@ -119,7 +166,7 @@ export default function Laporan({ transactions }) {
       count: prev.length,
       kg: prev.reduce((s, t) => s + (t.totalBerat || 0), 0),
     };
-  }, [transactions, preset, now]);
+  }, [transactions, preset, filterStatus, filterService, filterCustomer, now]);
 
   const chartData = useMemo(() => {
     const map = {};
@@ -172,6 +219,115 @@ export default function Laporan({ transactions }) {
     return `${d.getDate()}/${d.getMonth() + 1}`;
   };
 
+  const getTrend = (current, previous) => {
+    if (!previous || previous === 0) return { value: '-', up: true };
+    const diff = ((current - previous) / previous) * 100;
+    return { value: `${Math.abs(diff).toFixed(1)}%`, up: diff >= 0 };
+  };
+
+  const revenueTrend = getTrend(stats.totalRevenue, prevPeriodStats?.revenue);
+  const countTrend = getTrend(stats.count, prevPeriodStats?.count);
+  const kgTrend = getTrend(stats.totalKg, prevPeriodStats?.kg);
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: true,
+        position: 'bottom',
+        labels: {
+          font: { family: "'Inter', sans-serif", size: 11 },
+          color: '#6c757d',
+          padding: 16,
+          usePointStyle: true,
+          pointStyle: 'circle',
+        },
+      },
+      tooltip: {
+        backgroundColor: '#212529',
+        titleFont: { family: "'Inter', sans-serif", size: 12, weight: '600' },
+        bodyFont: { family: "'Inter', sans-serif", size: 11 },
+        padding: 12,
+        cornerRadius: 8,
+        displayColors: true,
+      },
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: {
+          font: { family: "'Inter', sans-serif", size: 11 },
+          color: '#6c757d',
+        },
+      },
+      y: {
+        grid: { color: '#f1f3f5', drawBorder: false },
+        ticks: {
+          font: { family: "'Inter', sans-serif", size: 11 },
+          color: '#6c757d',
+          callback: (value) => `${(value / 1000).toFixed(0)}k`,
+        },
+      },
+    },
+  };
+
+  const pieOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'right',
+        labels: {
+          font: { family: "'Inter', sans-serif", size: 11 },
+          color: '#212529',
+          padding: 12,
+          usePointStyle: true,
+          pointStyle: 'circle',
+        },
+      },
+      tooltip: {
+        backgroundColor: '#212529',
+        titleFont: { family: "'Inter', sans-serif", size: 12, weight: '600' },
+        bodyFont: { family: "'Inter', sans-serif", size: 11 },
+        padding: 12,
+        cornerRadius: 8,
+      },
+    },
+  };
+
+  const revenueChartData = {
+    labels: chartData.map(d => formatLabel(d.period)),
+    datasets: [
+      {
+        label: 'Pendapatan',
+        data: chartData.map(d => d.pendapatan),
+        backgroundColor: chartType === 'bar' ? '#212529' : 'transparent',
+        borderColor: '#212529',
+        borderWidth: chartType === 'line' ? 2.5 : 0,
+        fill: chartType === 'line',
+        tension: 0.3,
+        pointRadius: chartType === 'line' ? 4 : 0,
+        pointHoverRadius: chartType === 'line' ? 6 : 0,
+        pointBackgroundColor: '#212529',
+        borderRadius: chartType === 'bar' ? 6 : 0,
+      },
+    ],
+  };
+
+  const serviceChartData = {
+    labels: serviceData.map(d => d.nama),
+    datasets: [
+      {
+        label: 'Jumlah Transaksi',
+        data: serviceData.map(d => d.count),
+        backgroundColor: CHART_COLORS.slice(0, serviceData.length),
+        borderColor: '#fff',
+        borderWidth: 2,
+      },
+    ],
+  };
+
   const handleExport = () => {
     const data = filteredTx.map((t) => ({
       'No. Invoice': t.id,
@@ -190,63 +346,74 @@ export default function Laporan({ transactions }) {
     window.print();
   };
 
-  const getTrend = (current, previous) => {
-    if (!previous || previous === 0) return { value: '-', up: true };
-    const diff = ((current - previous) / previous) * 100;
-    return { value: `${Math.abs(diff).toFixed(1)}%`, up: diff >= 0 };
+  const clearFilters = () => {
+    setDateFrom('');
+    setDateTo('');
+    setPreset('all');
+    setFilterService('');
+    setFilterCustomer('');
+    setFilterStatus('');
   };
 
-  const revenueTrend = getTrend(stats.totalRevenue, prevPeriodStats?.revenue);
-  const countTrend = getTrend(stats.count, prevPeriodStats?.count);
-  const kgTrend = getTrend(stats.totalKg, prevPeriodStats?.kg);
+  const hasActiveFilters = dateFrom || dateTo || filterService || filterCustomer || filterStatus;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* Quick Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }} className="quick-stats-grid">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }} className="quick-stats-grid">
         <QuickStat
           label="Total Pendapatan"
           value={formatRupiah(stats.totalRevenue)}
-          sub={prevPeriodStats ? `${revenueTrend.value} dari periode sebelumnya` : undefined}
+          sub={prevPeriodStats ? `${revenueTrend.value} vs periode sebelumnya` : undefined}
           trendUp={revenueTrend.up}
         />
         <QuickStat
           label="Total Transaksi"
           value={stats.count}
-          sub={prevPeriodStats ? `${countTrend.value} dari periode sebelumnya` : undefined}
+          sub={prevPeriodStats ? `${countTrend.value} vs periode sebelumnya` : undefined}
           trendUp={countTrend.up}
         />
         <QuickStat
           label="Total Kg Dicuci"
           value={`${stats.totalKg.toFixed(1)} kg`}
-          sub={prevPeriodStats ? `${kgTrend.value} dari periode sebelumnya` : undefined}
+          sub={prevPeriodStats ? `${kgTrend.value} vs periode sebelumnya` : undefined}
           trendUp={kgTrend.up}
+        />
+        <QuickStat
+          label="Rata-rata / Transaksi"
+          value={formatRupiah(Math.round(stats.avgTransaction))}
+          sub={`${stats.completedTx} selesai`}
+          trendUp={true}
         />
       </div>
 
       {/* Filters */}
       <div className="card" style={{ padding: '16px 20px' }}>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
           {/* Period Presets */}
-          <div style={{ display: 'flex', gap: 4, padding: 4, borderRadius: 10, background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
-            {PERIOD_PRESETS.map((p) => (
-              <button
-                key={p.key}
-                onClick={() => applyPreset(p.key)}
-                style={{
-                  padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer',
-                  fontSize: 12, fontWeight: 600, transition: 'all 0.15s',
-                  background: preset === p.key ? 'var(--text)' : 'transparent',
-                  color: preset === p.key ? '#fff' : 'var(--text-3)',
-                }}
-              >
-                {p.label}
-              </button>
-            ))}
+          <div>
+            <label className="field-label">Periode</label>
+            <div style={{ display: 'flex', gap: 4, padding: 4, borderRadius: 10, background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+              {PERIOD_PRESETS.map((p) => (
+                <button
+                  key={p.key}
+                  onClick={() => applyPreset(p.key)}
+                  style={{
+                    padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                    fontSize: 12, fontWeight: 600, transition: 'all 0.15s',
+                    background: preset === p.key ? 'var(--text)' : 'transparent',
+                    color: preset === p.key ? '#fff' : 'var(--text-3)',
+                  }}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Custom Date Range */}
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div>
+            <label className="field-label">Dari Tanggal</label>
             <input
               type="date"
               value={dateFrom}
@@ -254,7 +421,9 @@ export default function Laporan({ transactions }) {
               className="field-input"
               style={{ width: 140, padding: '6px 10px', fontSize: 12 }}
             />
-            <span style={{ color: 'var(--text-3)', fontSize: 12 }}>s/d</span>
+          </div>
+          <div>
+            <label className="field-label">Sampai Tanggal</label>
             <input
               type="date"
               value={dateTo}
@@ -264,10 +433,68 @@ export default function Laporan({ transactions }) {
             />
           </div>
 
+          {/* Service Filter */}
+          <div>
+            <label className="field-label">Layanan</label>
+            <select
+              value={filterService}
+              onChange={(e) => setFilterService(e.target.value)}
+              className="field-input"
+              style={{ width: 160, padding: '6px 10px', fontSize: 12, appearance: 'none',
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236c757d' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
+                backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center', paddingRight: 32,
+              }}
+            >
+              <option value="">Semua Layanan</option>
+              {services?.map((s) => <option key={s.id} value={s.nama}>{s.nama}</option>)}
+            </select>
+          </div>
+
+          {/* Customer Filter */}
+          <div>
+            <label className="field-label">Pelanggan</label>
+            <select
+              value={filterCustomer}
+              onChange={(e) => setFilterCustomer(e.target.value)}
+              className="field-input"
+              style={{ width: 160, padding: '6px 10px', fontSize: 12, appearance: 'none',
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236c757d' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
+                backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center', paddingRight: 32,
+              }}
+            >
+              <option value="">Semua Pelanggan</option>
+              {customers?.map((c) => <option key={c.id} value={c.nama}>{c.nama}</option>)}
+            </select>
+          </div>
+
+          {/* Status Filter */}
+          <div>
+            <label className="field-label">Status</label>
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="field-input"
+              style={{ width: 140, padding: '6px 10px', fontSize: 12, appearance: 'none',
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236c757d' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
+                backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center', paddingRight: 32,
+              }}
+            >
+              <option value="">Semua Status</option>
+              <option value="Proses">Proses</option>
+              <option value="Selesai">Selesai</option>
+              <option value="Diambil">Diambil</option>
+            </select>
+          </div>
+
           {/* Actions */}
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+            {hasActiveFilters && (
+              <button className="btn btn-secondary" onClick={clearFilters} style={{ padding: '7px 14px', fontSize: 12 }}>
+                Reset
+              </button>
+            )}
             <button className="btn btn-secondary" onClick={handleExport} style={{ padding: '7px 14px', fontSize: 12 }}>
-              <Download size={14} /> Export CSV
+              <Download size={14} /> Export
             </button>
             <button className="btn btn-secondary" onClick={handlePrintReport} style={{ padding: '7px 14px', fontSize: 12 }}>
               <Printer size={14} /> Print
@@ -282,7 +509,7 @@ export default function Laporan({ transactions }) {
           <div>
             <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>Grafik Pendapatan</p>
             <p style={{ fontSize: 11, color: 'var(--text-3)' }}>
-              {dateFrom && dateTo ? `${dateFrom} - ${dateTo}` : 'Semua data'}
+              {dateFrom && dateTo ? `${dateFrom} - ${dateTo}` : 'Semua data'} · {filteredTx.length} transaksi
             </p>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -297,13 +524,13 @@ export default function Laporan({ transactions }) {
               ))}
             </div>
             <div style={{ display: 'flex', gap: 4, padding: 4, borderRadius: 10, background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
-              {[['bar','Bar'],['line','Line']].map(([k,l]) => (
-                <button key={k} onClick={() => setChartType(k)} style={{
+              {CHART_TYPES.map(({ key, label }) => (
+                <button key={key} onClick={() => setChartType(key)} style={{
                   padding: '5px 12px', borderRadius: 7, border: 'none', cursor: 'pointer',
                   fontSize: 12, fontWeight: 600, transition: 'all 0.15s',
-                  background: chartType === k ? 'var(--text)' : 'transparent',
-                  color: chartType === k ? '#fff' : 'var(--text-3)',
-                }}>{l}</button>
+                  background: chartType === key ? 'var(--text)' : 'transparent',
+                  color: chartType === key ? '#fff' : 'var(--text-3)',
+                }}>{label}</button>
               ))}
             </div>
           </div>
@@ -311,28 +538,11 @@ export default function Laporan({ transactions }) {
 
         {chartData.length > 0 ? (
           <div style={{ width: '100%', height: 300 }}>
-            <ResponsiveContainer>
-              {chartType === 'bar' ? (
-                <BarChart data={chartData} barSize={22}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                  <XAxis dataKey="period" tickFormatter={formatLabel} tick={{ fontSize: 11, fill: 'var(--text-3)' }} axisLine={false} tickLine={false} />
-                  <YAxis tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} tick={{ fontSize: 11, fill: 'var(--text-3)' }} axisLine={false} tickLine={false} width={38} />
-                  <Tooltip formatter={(v) => [formatRupiah(v), 'Pendapatan']} labelFormatter={formatLabel}
-                    contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 12, boxShadow: 'var(--shadow-md)' }}
-                    cursor={{ fill: 'var(--accent-bg)' }} />
-                  <Bar dataKey="pendapatan" fill="var(--text)" radius={[6,6,0,0]} />
-                </BarChart>
-              ) : (
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                  <XAxis dataKey="period" tickFormatter={formatLabel} tick={{ fontSize: 11, fill: 'var(--text-3)' }} axisLine={false} tickLine={false} />
-                  <YAxis tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} tick={{ fontSize: 11, fill: 'var(--text-3)' }} axisLine={false} tickLine={false} width={38} />
-                  <Tooltip formatter={(v) => [formatRupiah(v), 'Pendapatan']} labelFormatter={formatLabel}
-                    contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 12, boxShadow: 'var(--shadow-md)' }} />
-                  <Line type="monotone" dataKey="pendapatan" stroke="var(--text)" strokeWidth={2.5} dot={{ fill: 'var(--text)', r: 4, strokeWidth: 0 }} activeDot={{ r: 6 }} />
-                </LineChart>
-              )}
-            </ResponsiveContainer>
+            {chartType === 'bar' ? (
+              <Bar data={revenueChartData} options={chartOptions} />
+            ) : (
+              <Line data={revenueChartData} options={chartOptions} />
+            )}
           </div>
         ) : (
           <div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-3)', fontSize: 13 }}>
@@ -344,18 +554,27 @@ export default function Laporan({ transactions }) {
       {/* Service Popularity + Detail */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }} className="laporan-bottom">
         <div className="card" style={{ padding: '20px 24px' }}>
-          <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>Layanan Paling Laris</p>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>Layanan Paling Laris</p>
+            <div style={{ display: 'flex', gap: 4, padding: 3, borderRadius: 8, background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+              {PIE_CHART_TYPES.map(({ key, label }) => (
+                <button key={key} onClick={() => setPieChartType(key)} style={{
+                  padding: '4px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                  fontSize: 11, fontWeight: 600, transition: 'all 0.15s',
+                  background: pieChartType === key ? 'var(--text)' : 'transparent',
+                  color: pieChartType === key ? '#fff' : 'var(--text-3)',
+                }}>{label}</button>
+              ))}
+            </div>
+          </div>
           {serviceData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={250}>
-              <PieChart>
-                <Pie data={serviceData} dataKey="count" nameKey="nama" cx="50%" cy="50%" outerRadius={90} innerRadius={40} paddingAngle={2}
-                  label={({ nama, percent }) => `${nama} (${(percent * 100).toFixed(0)}%)`} labelLine={{ stroke: 'var(--text-3)' }}>
-                  {serviceData.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
-                </Pie>
-                <Tooltip formatter={(v, n) => [`${v} transaksi`, n]}
-                  contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 12 }} />
-              </PieChart>
-            </ResponsiveContainer>
+            <div style={{ height: 280 }}>
+              {pieChartType === 'pie' ? (
+                <Pie data={serviceChartData} options={pieOptions} />
+              ) : (
+                <Doughnut data={serviceChartData} options={pieOptions} />
+              )}
+            </div>
           ) : (
             <div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-3)', fontSize: 13 }}>Belum ada data</div>
           )}
@@ -388,39 +607,39 @@ export default function Laporan({ transactions }) {
         </div>
       </div>
 
-      {/* Average Transaction Stat */}
+      {/* Transaction Status Breakdown */}
       <div className="card" style={{ padding: '20px 24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 9, background: 'var(--accent-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid var(--accent-border)' }}>
-            <Activity size={16} style={{ color: 'var(--text)' }} />
+        <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>Status Transaksi</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }} className="status-grid">
+          <div style={{ padding: '16px', borderRadius: 10, background: 'var(--surface-2)', border: '1px solid var(--border)', textAlign: 'center' }}>
+            <p style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Proses</p>
+            <p style={{ fontSize: 28, fontWeight: 800, color: 'var(--amber)' }}>{stats.processTx}</p>
           </div>
-          <div>
-            <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>Rata-rata per Transaksi</p>
-            <p style={{ fontSize: 11, color: 'var(--text-3)' }}>Berdasarkan {stats.count} transaksi</p>
+          <div style={{ padding: '16px', borderRadius: 10, background: 'var(--surface-2)', border: '1px solid var(--border)', textAlign: 'center' }}>
+            <p style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Selesai</p>
+            <p style={{ fontSize: 28, fontWeight: 800, color: 'var(--green)' }}>{stats.completedTx}</p>
           </div>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }} className="avg-grid">
-          <div style={{ padding: '14px 16px', borderRadius: 10, background: 'var(--surface-2)', border: '1px solid var(--border)', textAlign: 'center' }}>
-            <p style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Rata-rata</p>
-            <p style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)' }}>{formatRupiah(Math.round(stats.avgTransaction))}</p>
-          </div>
-          <div style={{ padding: '14px 16px', borderRadius: 10, background: 'var(--surface-2)', border: '1px solid var(--border)', textAlign: 'center' }}>
-            <p style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Total Kg</p>
-            <p style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)' }}>{stats.totalKg.toFixed(1)} kg</p>
-          </div>
-          <div style={{ padding: '14px 16px', borderRadius: 10, background: 'var(--surface-2)', border: '1px solid var(--border)', textAlign: 'center' }}>
-            <p style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Rata-rata Kg</p>
-            <p style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)' }}>
-              {stats.count > 0 ? (stats.totalKg / stats.count).toFixed(1) : '0'} kg
+          <div style={{ padding: '16px', borderRadius: 10, background: 'var(--surface-2)', border: '1px solid var(--border)', textAlign: 'center' }}>
+            <p style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Diambil</p>
+            <p style={{ fontSize: 28, fontWeight: 800, color: 'var(--text-3)' }}>
+              {filteredTx.filter(t => t.status === 'Diambil').length}
             </p>
           </div>
         </div>
       </div>
 
       <style>{`
-        .quick-stats-grid { grid-template-columns: repeat(3,1fr) !important; }
-        @media (max-width: 900px) { .quick-stats-grid { grid-template-columns: 1fr !important; } .laporan-bottom { grid-template-columns: 1fr !important; } .avg-grid { grid-template-columns: 1fr !important; } }
-        @media (max-width: 560px) { .avg-grid { grid-template-columns: 1fr !important; } }
+        .quick-stats-grid { grid-template-columns: repeat(4,1fr) !important; }
+        .status-grid { grid-template-columns: repeat(3,1fr) !important; }
+        @media (max-width: 1200px) { .quick-stats-grid { grid-template-columns: repeat(2,1fr) !important; } }
+        @media (max-width: 900px) { 
+          .quick-stats-grid { grid-template-columns: 1fr !important; } 
+          .laporan-bottom { grid-template-columns: 1fr !important; } 
+          .status-grid { grid-template-columns: 1fr !important; }
+        }
+        @media (max-width: 560px) { 
+          .status-grid { grid-template-columns: 1fr !important; }
+        }
       `}</style>
     </div>
   );

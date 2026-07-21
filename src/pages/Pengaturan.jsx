@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { PlusCircle, Edit3, Trash2, Save, Store, Database, Tag } from 'lucide-react';
+import { PlusCircle, Edit3, Trash2, Save, Store, Database, Tag, AlertTriangle } from 'lucide-react';
 import { Input } from '../components/UI';
 import Swal from 'sweetalert2';
 import Modal from '../components/Modal';
@@ -250,6 +250,44 @@ export default function Pengaturan({ services, setServices, settings, setSetting
             ⬆ Restore Data (.json)
           </button>
         </div>
+      </Section>
+
+      {/* Reset Data */}
+      <Section
+        icon={AlertTriangle}
+        iconBg="var(--red-bg)"
+        title="Reset Semua Data"
+        description="Hapus semua data dan mulai dari awal"
+      >
+        <p style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 16, lineHeight: 1.6 }}>
+          Tindakan ini akan menghapus <strong>semua transaksi, pelanggan, layanan, dan pengaturan</strong> secara permanen. Pastikan Anda sudah melakukan backup sebelum melanjutkan.
+        </p>
+        <button
+          className="btn btn-danger"
+          onClick={() => {
+            Swal.fire({
+              title: 'Reset Semua Data?',
+              text: 'Semua data akan dihapus permanen dan tidak bisa dikembalikan!',
+              icon: 'warning',
+              showCancelButton: true,
+              confirmButtonColor: 'var(--red)',
+              cancelButtonColor: 'var(--border-2)',
+              confirmButtonText: 'Ya, Reset Semua!',
+              cancelButtonText: 'Batal',
+              showCloseButton: true,
+              background: 'var(--surface)',
+              color: 'var(--text)',
+            }).then((result) => {
+              if (result.isConfirmed) {
+                localStorage.clear();
+                window.location.reload();
+              }
+            });
+          }}
+          style={{ padding: '9px 18px' }}
+        >
+          <Trash2 size={14} /> Reset Semua Data
+        </button>
       </Section>
 
       {/* Service Modal */}

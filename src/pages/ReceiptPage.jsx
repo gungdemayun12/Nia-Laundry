@@ -101,7 +101,7 @@ export default function ReceiptPage() {
     );
   }
 
-  const w = settings?.lebarKertas === '80mm' ? '76mm' : '54mm';
+  const is58mm = settings?.lebarKertas !== '80mm';
 
   return (
     <div style={{ 
@@ -152,27 +152,31 @@ export default function ReceiptPage() {
           id="receipt-capture"
           style={{
             fontFamily: "'Source Code Pro', 'Courier New', monospace",
-            fontSize: '11px',
-            lineHeight: '1.5',
+            fontSize: is58mm ? '10px' : '11px',
+            lineHeight: '1.6',
             color: '#000',
             background: '#fff',
-            width: w,
-            padding: '4mm 3mm',
+            width: is58mm ? '54mm' : '76mm',
+            padding: is58mm ? '3mm 2mm' : '4mm 3mm',
             boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
             borderRadius: 4,
           }}
         >
           {/* Header */}
-          <div style={{ textAlign: 'center', marginBottom: 6, paddingBottom: 6, borderBottom: '2px solid #000' }}>
-            <div style={{ fontWeight: 700, fontSize: '14px', letterSpacing: '0.03em', marginBottom: 2 }}>
+          <div style={{ textAlign: 'center', marginBottom: 8, paddingBottom: 8, borderBottom: '2px solid #000' }}>
+            <div style={{ fontWeight: 700, fontSize: is58mm ? '13px' : '14px', letterSpacing: '0.05em', marginBottom: 3 }}>
               {settings?.namaToko || 'LAUNDRY'}
             </div>
-            {settings?.alamat && <div style={{ fontSize: '10px', marginBottom: 1 }}>{settings.alamat}</div>}
-            {settings?.telp && <div style={{ fontSize: '10px' }}>{settings.telp}</div>}
+            {settings?.alamat && (
+              <div style={{ fontSize: '9px', marginBottom: 2, lineHeight: 1.4 }}>{settings.alamat}</div>
+            )}
+            {settings?.telp && (
+              <div style={{ fontSize: '9px' }}>{settings.telp}</div>
+            )}
           </div>
 
           {/* Invoice info */}
-          <div style={{ fontSize: '10px', marginBottom: 5, paddingBottom: 5, borderBottom: '1px dashed #000' }}>
+          <div style={{ fontSize: '9px', marginBottom: 6, paddingBottom: 6, borderBottom: '1px dashed #000' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
               <span style={{ fontWeight: 600 }}>No. Struk</span>
               <span style={{ fontWeight: 600 }}>{transaction.id}</span>
@@ -198,17 +202,27 @@ export default function ReceiptPage() {
           </div>
 
           {/* Items */}
-          <div style={{ fontSize: '10px', marginBottom: 5, paddingBottom: 5, borderBottom: '1px dashed #000' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0', borderBottom: '1px solid #000', marginBottom: 4, fontWeight: 700, fontSize: '9px', letterSpacing: '0.05em' }}>
+          <div style={{ fontSize: '9px', marginBottom: 6, paddingBottom: 6, borderBottom: '1px dashed #000' }}>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              padding: '3px 0', 
+              borderBottom: '1px solid #000', 
+              marginBottom: 4, 
+              fontWeight: 700, 
+              fontSize: '8px', 
+              letterSpacing: '0.08em',
+              color: '#000',
+            }}>
               <span style={{ flex: 2 }}>LAYANAN</span>
               <span style={{ flex: 1, textAlign: 'center' }}>KG</span>
               <span style={{ flex: 1, textAlign: 'right' }}>HARGA</span>
-              <span style={{ flex: 1, textAlign: 'right' }}>SUBTOTAL</span>
+              <span style={{ flex: 1, textAlign: 'right' }}>JML</span>
             </div>
             {transaction.items?.map((item, i) => (
               <div key={i} style={{ padding: '4px 0', borderBottom: '1px dashed #ccc' }}>
-                <div style={{ fontWeight: 600, marginBottom: 2, fontSize: '10px' }}>{item.layanan}</div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#444' }}>
+                <div style={{ fontWeight: 600, marginBottom: 2, fontSize: '9px', lineHeight: 1.3 }}>{item.layanan}</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8px', color: '#333' }}>
                   <span style={{ flex: 2 }}>{item.berat} kg</span>
                   <span style={{ flex: 1, textAlign: 'center' }}>{formatRupiah(item.hargaPerKg)}</span>
                   <span style={{ flex: 1, textAlign: 'right' }}></span>
@@ -219,7 +233,7 @@ export default function ReceiptPage() {
           </div>
 
           {/* Totals */}
-          <div style={{ fontSize: '10px', marginBottom: 5, paddingBottom: 5, borderBottom: '1px dashed #000' }}>
+          <div style={{ fontSize: '9px', marginBottom: 6, paddingBottom: 6, borderBottom: '1px dashed #000' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
               <span>Total Berat</span>
               <span style={{ fontWeight: 600 }}>{transaction.totalBerat} kg</span>
@@ -236,8 +250,9 @@ export default function ReceiptPage() {
             )}
             <div style={{
               display: 'flex', justifyContent: 'space-between',
-              fontWeight: 700, fontSize: '13px', marginTop: 4, paddingTop: 4,
+              fontWeight: 700, fontSize: '12px', marginTop: 4, paddingTop: 4,
               borderTop: '2px solid #000',
+              letterSpacing: '0.02em',
             }}>
               <span>TOTAL</span>
               <span>{formatRupiah(transaction.totalBayar)}</span>
@@ -245,28 +260,28 @@ export default function ReceiptPage() {
           </div>
 
           {/* Status & Estimation */}
-          <div style={{ fontSize: '10px', marginBottom: 5, paddingBottom: 5, borderBottom: '1px dashed #000' }}>
+          <div style={{ fontSize: '9px', marginBottom: 6, paddingBottom: 6, borderBottom: '1px dashed #000' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
               <span>Status</span>
               <span style={{ fontWeight: 700 }}>{transaction.status}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
-              <span>Estimasi Selesai</span>
+              <span>Estimasi</span>
               <span style={{ fontWeight: 700 }}>{formatDate(transaction.estimasiSelesai)}</span>
             </div>
             {transaction.catatan && (
-              <div style={{ marginTop: 3, paddingTop: 3, borderTop: '1px dashed #ccc', fontSize: '9px' }}>
+              <div style={{ marginTop: 3, paddingTop: 3, borderTop: '1px dashed #ccc', fontSize: '8px', lineHeight: 1.4 }}>
                 <strong>Catatan:</strong> {transaction.catatan}
               </div>
             )}
           </div>
 
           {/* Footer */}
-          <div style={{ textAlign: 'center', marginTop: 6, paddingTop: 6, borderTop: '2px solid #000', fontSize: '9px' }}>
+          <div style={{ textAlign: 'center', marginTop: 6, paddingTop: 6, borderTop: '2px solid #000', fontSize: '8px' }}>
             {(settings?.footerStruk || 'Terima kasih telah mempercayakan laundry Anda pada kami!').split('\n').map((line, i) => (
-              <div key={i} style={{ marginBottom: 1 }}>{line}</div>
+              <div key={i} style={{ marginBottom: 2, lineHeight: 1.4 }}>{line}</div>
             ))}
-            <div style={{ marginTop: 5, fontWeight: 700, fontSize: '10px', letterSpacing: '0.05em' }}>
+            <div style={{ marginTop: 6, fontWeight: 700, fontSize: '9px', letterSpacing: '0.08em' }}>
               *** SIMPAN STRUK INI ***
             </div>
           </div>
