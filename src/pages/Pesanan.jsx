@@ -250,7 +250,7 @@ export default function Pesanan({ transactions, setTransactions }) {
                           {statusDropdown === t.id && (
                             <div style={{
                               position: 'absolute', top: 'calc(100% + 4px)', right: 0,
-                              zIndex: 100,
+                              zIndex: 10001,
                               background: 'var(--surface)',
                               border: '1px solid var(--border)',
                               borderRadius: 10,
@@ -387,7 +387,7 @@ export default function Pesanan({ transactions, setTransactions }) {
       {/* Click outside to close dropdown */}
       {statusDropdown && (
         <div
-          style={{ position: 'fixed', inset: 0, zIndex: 50 }}
+          style={{ position: 'fixed', inset: 0 }}
           onClick={() => setStatusDropdown(null)}
         />
       )}
