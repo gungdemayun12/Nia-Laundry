@@ -10,26 +10,26 @@ export default function Modal({ isOpen, onClose, title, maxWidth = '440px', chil
       padding: '20px',
       overflowY: 'auto',
     }}>
-      {/* Backdrop */}
+      {/* Backdrop — softer, not too dark */}
       <div
         onClick={onClose}
         style={{
           position: 'fixed', inset: 0,
-          background: 'rgba(0,0,0,0.5)',
-          backdropFilter: 'blur(6px)',
+          background: 'rgba(0,0,0,0.25)',
+          backdropFilter: 'blur(2px)',
           animation: 'fadeIn 0.15s ease-out',
         }}
       />
 
-      {/* Dialog */}
+      {/* Dialog — clean white, sharp shadow */}
       <div style={{
         position: 'relative', width: '100%', maxWidth,
-        background: 'var(--surface)',
-        border: '1px solid var(--border)',
-        borderRadius: 16,
-        boxShadow: 'var(--shadow-lg)',
+        background: '#ffffff',
+        border: '1px solid #e5e7eb',
+        borderRadius: 14,
+        boxShadow: '0 20px 60px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05)',
         overflow: 'hidden',
-        animation: 'slideUp 0.2s ease-out',
+        animation: 'modalIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
         maxHeight: '85vh',
         display: 'flex',
         flexDirection: 'column',
@@ -39,32 +39,33 @@ export default function Modal({ isOpen, onClose, title, maxWidth = '440px', chil
         {title && (
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '16px 20px',
-            borderBottom: '1px solid var(--border)',
-            background: 'var(--surface-2)',
+            padding: '18px 24px',
+            borderBottom: '1px solid #f3f4f6',
+            background: '#ffffff',
             flexShrink: 0,
           }}>
-            <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{title}</p>
+            <p style={{ fontSize: 15, fontWeight: 700, color: '#111827', letterSpacing: '-0.01em' }}>{title}</p>
             <button
               onClick={onClose}
               style={{
-                width: 30, height: 30, borderRadius: 8, border: '1.5px solid var(--border)',
-                background: 'var(--surface)', cursor: 'pointer',
+                width: 32, height: 32, borderRadius: 8, border: '1px solid #e5e7eb',
+                background: '#ffffff', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: 'var(--text-3)',
+                color: '#6b7280',
                 transition: 'all 0.12s',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--surface-2)'; e.currentTarget.style.borderColor = 'var(--border-2)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--surface)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#f9fafb'; e.currentTarget.style.borderColor = '#d1d5db'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#ffffff'; e.currentTarget.style.borderColor = '#e5e7eb'; }}
             >
               <X size={16} />
             </button>
           </div>
         )}
 
-        {/* Body */}
+        {/* Body — light gray inset for depth */}
         <div style={{
-          padding: '20px',
+          padding: 24,
+          background: '#ffffff',
           overflowY: 'auto',
           flex: 1,
         }}>
@@ -77,9 +78,9 @@ export default function Modal({ isOpen, onClose, title, maxWidth = '440px', chil
           from { opacity: 0; }
           to { opacity: 1; }
         }
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateY(12px) scale(0.98); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
+        @keyframes modalIn {
+          from { opacity: 0; transform: translateY(16px) scale(0.96); }
+          to   { opacity: 1; transform: translateY(0) scale(1); }
         }
       `}</style>
     </div>

@@ -82,7 +82,7 @@ export default function Laporan({ transactions, services, customers }) {
   const [preset, setPreset] = useState('all');
   const [filterService, setFilterService] = useState('');
   const [filterCustomer, setFilterCustomer] = useState('');
-  const [filterStatus, setFilterStatus] = useState('');
+  const [filterStatus, setFilterStatus] = useState('Diambil');
 
   const now = useMemo(() => new Date(), []);
 

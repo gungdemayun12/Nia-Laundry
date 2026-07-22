@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, PlusCircle, ClipboardList,
-  Users, Settings, BarChart3, Menu, X, Shirt, Moon, Sun, Clock, Tag,
+  Users, Settings, BarChart3, Menu, X, Shirt, Moon, Sun, Clock, Tag, Archive,
 } from 'lucide-react';
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/transaksi-baru', label: 'Transaksi Baru', icon: PlusCircle },
-  { to: '/riwayat', label: 'Riwayat', icon: ClipboardList },
+  { to: '/pesanan', label: 'Pesanan', icon: ClipboardList },
+  { to: '/riwayat-pesanan', label: 'Riwayat Pesanan', icon: Archive },
   { to: '/pelanggan', label: 'Pelanggan', icon: Users },
   { to: '/layanan', label: 'Layanan', icon: Tag },
   { to: '/pengaturan', label: 'Pengaturan', icon: Settings },

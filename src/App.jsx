@@ -8,7 +8,8 @@ import Swal from 'sweetalert2';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import TransaksiBaru from './pages/TransaksiBaru';
-import RiwayatTransaksi from './pages/RiwayatTransaksi';
+import Pesanan from './pages/Pesanan';
+import RiwayatPesanan from './pages/RiwayatPesanan';
 import DataPelanggan from './pages/DataPelanggan';
 import Layanan from './pages/Layanan';
 import Pengaturan from './pages/Pengaturan';
@@ -84,13 +85,22 @@ export default function App() {
             }
           />
           <Route
-            path="/riwayat"
+            path="/pesanan"
             element={
-              <RiwayatTransaksi
+              <Pesanan
                 transactions={transactions}
                 setTransactions={setTransactions}
                 services={services}
-                settings={settings}
+              />
+            }
+          />
+          <Route
+            path="/riwayat-pesanan"
+            element={
+              <RiwayatPesanan
+                transactions={transactions}
+                setTransactions={setTransactions}
+                services={services}
               />
             }
           />

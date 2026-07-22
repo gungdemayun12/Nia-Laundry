@@ -65,7 +65,7 @@ export default function Dashboard({ transactions, setTransactions }) {
   const todayStats = useMemo(() => {
     const tx = transactions.filter((t) => {
       const d = new Date(t.tanggal); d.setHours(0, 0, 0, 0);
-      return d.getTime() === today.getTime();
+      return d.getTime() === today.getTime() && t.status === 'Diambil';
     });
     return {
       revenue: tx.reduce((s, t) => s + (t.totalBayar || 0), 0),
@@ -90,12 +90,12 @@ export default function Dashboard({ transactions, setTransactions }) {
   );
 
   const chartData = useMemo(() => {
-    let filtered = transactions;
+    let filtered = transactions.filter(t => t.status === 'Diambil');
     if (startDate && endDate) {
       const s = new Date(startDate).getTime();
       const e = new Date(endDate);
       e.setHours(23, 59, 59, 999);
-      filtered = transactions.filter(t => {
+      filtered = filtered.filter(t => {
         const d = new Date(t.tanggal).getTime();
         return d >= s && d <= e.getTime();
       });
