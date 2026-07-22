@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, PlusCircle, ClipboardList,
-  Users, Settings, BarChart3, Menu, X, Shirt, Moon, Sun, Clock,
+  Users, Settings, BarChart3, Menu, X, Shirt, Moon, Sun, Clock, Tag,
 } from 'lucide-react';
 
 const navItems = [
@@ -10,6 +10,7 @@ const navItems = [
   { to: '/transaksi-baru', label: 'Transaksi Baru', icon: PlusCircle },
   { to: '/riwayat', label: 'Riwayat', icon: ClipboardList },
   { to: '/pelanggan', label: 'Pelanggan', icon: Users },
+  { to: '/layanan', label: 'Layanan', icon: Tag },
   { to: '/pengaturan', label: 'Pengaturan', icon: Settings },
   { to: '/laporan', label: 'Laporan', icon: BarChart3 },
 ];

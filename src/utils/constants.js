@@ -1,5 +1,6 @@
 export const DEFAULT_SERVICES = [
-  { id: 'srv-001', nama: 'Laundry Reguler', hargaPerKg: 5000 },
+  { id: 'srv-001', nama: 'Laundry Biasa', hargaPerKg: 5000 },
+  { id: 'srv-002', nama: 'Laundry Ekspres', hargaPerKg: 8000 },
 ];
 
 export const DEFAULT_SETTINGS = {

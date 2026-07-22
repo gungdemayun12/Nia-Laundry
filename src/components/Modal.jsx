@@ -8,12 +8,13 @@ export default function Modal({ isOpen, onClose, title, maxWidth = '440px', chil
       position: 'fixed', inset: 0, zIndex: 9999,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       padding: '20px',
+      overflowY: 'auto',
     }}>
       {/* Backdrop */}
       <div
         onClick={onClose}
         style={{
-          position: 'absolute', inset: 0,
+          position: 'fixed', inset: 0,
           background: 'rgba(0,0,0,0.5)',
           backdropFilter: 'blur(6px)',
           animation: 'fadeIn 0.15s ease-out',
@@ -32,6 +33,7 @@ export default function Modal({ isOpen, onClose, title, maxWidth = '440px', chil
         maxHeight: '85vh',
         display: 'flex',
         flexDirection: 'column',
+        margin: 'auto',
       }}>
         {/* Header */}
         {title && (

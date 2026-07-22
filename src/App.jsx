@@ -10,6 +10,7 @@ import Dashboard from './pages/Dashboard';
 import TransaksiBaru from './pages/TransaksiBaru';
 import RiwayatTransaksi from './pages/RiwayatTransaksi';
 import DataPelanggan from './pages/DataPelanggan';
+import Layanan from './pages/Layanan';
 import Pengaturan from './pages/Pengaturan';
 import Laporan from './pages/Laporan';
 import ReceiptPage from './pages/ReceiptPage';
@@ -67,7 +68,6 @@ export default function App() {
               <Dashboard
                 transactions={transactions}
                 setTransactions={setTransactions}
-                services={services}
               />
             }
           />
@@ -104,11 +104,18 @@ export default function App() {
             }
           />
           <Route
+            path="/layanan"
+            element={
+              <Layanan
+                services={services}
+                setServices={setServices}
+              />
+            }
+          />
+          <Route
             path="/pengaturan"
             element={
               <Pengaturan
-                services={services}
-                setServices={setServices}
                 settings={settings}
                 setSettings={setSettings}
                 onBackup={handleBackup}
