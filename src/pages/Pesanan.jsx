@@ -1,17 +1,17 @@
 import { useState, useMemo } from 'react';
-import { Search, Trash2 } from 'lucide-react';
+import { Search, Trash2, Eye, ChevronDown } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { StatusBadge } from '../components/UI';
 import Modal from '../components/Modal';
-import { formatRupiah, formatDateTime } from '../utils/helpers';
+import { formatRupiah, formatDateTime, formatDate } from '../utils/helpers';
 import { STATUS_OPTIONS } from '../utils/constants';
 
 export default function Pesanan({ transactions, setTransactions }) {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [selectedIds, setSelectedIds] = useState([]);
-  const [editTx, setEditTx] = useState(null);
-  const [editStatus, setEditStatus] = useState('');
+  const [detailTx, setDetailTx] = useState(null);
+  const [statusDropdown, setStatusDropdown] = useState(null);
 
   const filtered = useMemo(() => {
     return transactions
@@ -92,19 +92,9 @@ export default function Pesanan({ transactions, setTransactions }) {
     });
   };
 
-  const handleStatusUpdate = (id, newStatus) => {
+  const handleStatusChange = (id, newStatus) => {
     setTransactions((prev) => prev.map((t) => t.id === id ? { ...t, status: newStatus } : t));
-  };
-
-  const handleEditSave = () => {
-    if (!editTx) return;
-    setTransactions((prev) => prev.map((t) => t.id === editTx.id ? { ...t, status: editStatus } : t));
-    setEditTx(null);
-  };
-
-  const getNextStatus = (current) => {
-    const idx = STATUS_OPTIONS.indexOf(current);
-    return idx < STATUS_OPTIONS.length - 1 ? STATUS_OPTIONS[idx + 1] : current;
+    setStatusDropdown(null);
   };
 
   return (
@@ -220,23 +210,78 @@ export default function Pesanan({ transactions, setTransactions }) {
                     <td style={{ padding: '12px 16px', color: 'var(--text)', whiteSpace: 'nowrap', fontWeight: 500 }}>
                       {t.totalBerat} kg
                     </td>
-                    <td style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap' }}>
-                      {formatRupiah(t.totalBayar)}
+                    <td style={{ padding: '12px 16px' }}>
+                      <StatusBadge status={t.status} />
                     </td>
                     <td style={{ padding: '12px 16px' }}>
-                      <button
-                        onClick={() => {
-                          const next = getNextStatus(t.status);
-                          if (next !== t.status) handleStatusUpdate(t.id, next);
-                        }}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                        title="Klik untuk ubah status"
-                      >
-                        <StatusBadge status={t.status} />
-                      </button>
-                    </td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <div style={{ display: 'flex', gap: 4 }}>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        {/* Detail Button */}
+                        <button
+                          onClick={() => setDetailTx(t)}
+                          style={{
+                            width: 30, height: 30, borderRadius: 8, border: '1.5px solid transparent',
+                            background: 'transparent', cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            color: 'var(--text)',
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = 'var(--accent-bg)'}
+                          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                          title="Lihat Detail"
+                        >
+                          <Eye size={14} />
+                        </button>
+
+                        {/* Status Dropdown */}
+                        <div style={{ position: 'relative' }}>
+                          <button
+                            onClick={() => setStatusDropdown(statusDropdown === t.id ? null : t.id)}
+                            style={{
+                              width: 30, height: 30, borderRadius: 8, border: '1.5px solid transparent',
+                              background: 'transparent', cursor: 'pointer',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              color: 'var(--green)',
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--green-bg)'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                            title="Ubah Status"
+                          >
+                            <ChevronDown size={14} />
+                          </button>
+                          {statusDropdown === t.id && (
+                            <div style={{
+                              position: 'absolute', top: 'calc(100% + 4px)', right: 0,
+                              zIndex: 100,
+                              background: 'var(--surface)',
+                              border: '1px solid var(--border)',
+                              borderRadius: 10,
+                              boxShadow: 'var(--shadow-lg)',
+                              overflow: 'hidden',
+                              minWidth: 140,
+                            }}>
+                              {STATUS_OPTIONS.map((s) => (
+                                <button
+                                  key={s}
+                                  onClick={() => handleStatusChange(t.id, s)}
+                                  style={{
+                                    display: 'flex', alignItems: 'center', gap: 8,
+                                    width: '100%', padding: '10px 14px',
+                                    background: t.status === s ? 'var(--accent-bg)' : 'transparent',
+                                    border: 'none', cursor: 'pointer',
+                                    fontSize: 13, color: 'var(--text)', textAlign: 'left',
+                                    borderBottom: '1px solid var(--border)',
+                                  }}
+                                  onMouseEnter={(e) => { if (t.status !== s) e.currentTarget.style.background = 'var(--surface-2)'; }}
+                                  onMouseLeave={(e) => { if (t.status !== s) e.currentTarget.style.background = 'transparent'; }}
+                                >
+                                  <StatusBadge status={s} />
+                                  {t.status === s && <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-3)' }}>✓</span>}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Delete Button */}
                         <button
                           onClick={() => handleDelete(t.id)}
                           style={{
@@ -268,34 +313,84 @@ export default function Pesanan({ transactions, setTransactions }) {
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         }}>
           <span>Menampilkan <strong style={{ color: 'var(--text)' }}>{filtered.length}</strong> pesanan aktif</span>
-          <span>Klik badge status untuk mengubah status</span>
+          <span>Klik ikon untuk melihat detail atau mengubah status</span>
         </div>
       </div>
 
-      {/* Edit Modal */}
-      <Modal isOpen={!!editTx} onClose={() => setEditTx(null)} title={`Edit Status — ${editTx?.id}`} maxWidth="360px">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div>
-            <label className="field-label">Status Baru</label>
-            <select
-              value={editStatus}
-              onChange={(e) => setEditStatus(e.target.value)}
-              className="field-input"
-              style={{
-                appearance: 'none',
-                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236c757d' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
-                backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center', paddingRight: 32,
-              }}
-            >
-              {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
+      {/* Detail Modal */}
+      <Modal isOpen={!!detailTx} onClose={() => setDetailTx(null)} title={`Detail Pesanan — ${detailTx?.id}`} maxWidth="480px">
+        {detailTx && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 13, color: 'var(--text-2)' }}>Status</span>
+              <StatusBadge status={detailTx.status} />
+            </div>
+
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 13, color: 'var(--text-2)' }}>Pelanggan</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{detailTx.pelanggan?.nama || '-'}</span>
+              </div>
+              {detailTx.pelanggan?.noHp && (
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: 13, color: 'var(--text-2)' }}>No. HP</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{detailTx.pelanggan.noHp}</span>
+                </div>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 13, color: 'var(--text-2)' }}>Tanggal</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{formatDateTime(detailTx.tanggal)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 13, color: 'var(--text-2)' }}>Total Berat</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{detailTx.totalBerat} kg</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 13, color: 'var(--text-2)' }}>Total Bayar</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{formatRupiah(detailTx.totalBayar)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 13, color: 'var(--text-2)' }}>Estimasi Selesai</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{formatDate(detailTx.estimasiSelesai)}</span>
+              </div>
+              {detailTx.catatan && (
+                <div style={{ borderTop: '1px solid var(--border)', paddingTop: 10, marginTop: 4 }}>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)', marginBottom: 4 }}>Catatan</p>
+                  <p style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.5 }}>{detailTx.catatan}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Items */}
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+              <p style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-3)', marginBottom: 10 }}>Detail Layanan</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {detailTx.items?.map((item, i) => (
+                  <div key={i} style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    padding: '10px 12px', borderRadius: 8,
+                    background: 'var(--surface-2)', border: '1px solid var(--border)',
+                  }}>
+                    <div>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{item.layanan}</p>
+                      <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>{item.berat} kg x {formatRupiah(item.hargaPerKg)}</p>
+                    </div>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{formatRupiah(item.subtotal)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-            <button className="btn btn-secondary" onClick={() => setEditTx(null)} style={{ padding: '8px 18px' }}>Batal</button>
-            <button className="btn btn-primary" onClick={handleEditSave} style={{ padding: '8px 18px' }}>Simpan</button>
-          </div>
-        </div>
+        )}
       </Modal>
+
+      {/* Click outside to close dropdown */}
+      {statusDropdown && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 50 }}
+          onClick={() => setStatusDropdown(null)}
+        />
+      )}
     </div>
   );
 }

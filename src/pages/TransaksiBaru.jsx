@@ -28,6 +28,15 @@ export default function TransaksiBaru({
 
   const hasService = items.some(i => i.layananId && parseFloat(i.berat) > 0);
 
+  /* ── auto advance steps ── */
+  useEffect(() => {
+    if (step === 0 && pelangganNama.trim().length > 0 && pelangganHp.trim().length > 0) {
+      setTimeout(() => setStep(1), 300);
+    } else if (step === 1 && hasService) {
+      setTimeout(() => setStep(2), 300);
+    }
+  }, [pelangganNama, pelangganHp, hasService, step]);
+
   /* ── autocomplete ── */
   const handleNama = (val) => {
     setPelangganNama(val);
@@ -70,15 +79,6 @@ export default function TransaksiBaru({
   }, [items, services]);
 
   const validCount = items.filter((i) => i.layananId && parseFloat(i.berat) > 0).length;
-
-  const canProceed =
-    step === 0 ? pelangganNama.trim().length > 0 :
-    step === 1 ? hasService :
-    true;
-
-  const handleStepNext = () => {
-    if (step < 2 && canProceed) setStep(step + 1);
-  };
 
   const handleStepBack = () => {
     if (step > 0) setStep(step - 1);
@@ -465,16 +465,6 @@ export default function TransaksiBaru({
             {step > 0 ? (
               <button className="btn btn-secondary" onClick={handleStepBack} style={{ padding: '10px 20px' }}>
                 ← Kembali
-              </button>
-            ) : <div />}
-            {step < 2 ? (
-              <button
-                className="btn btn-primary"
-                onClick={handleStepNext}
-                disabled={!canProceed}
-                style={{ padding: '10px 24px', marginLeft: 'auto' }}
-              >
-                Lanjut →
               </button>
             ) : <div />}
           </div>
