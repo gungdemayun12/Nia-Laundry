@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { HashRouter, Routes, Route } from 'react-router-dom';
+import { HashRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { DEFAULT_SERVICES, DEFAULT_SETTINGS } from './utils/constants';
 import { exportJSON, importJSON } from './utils/helpers';
@@ -15,6 +15,30 @@ import Layanan from './pages/Layanan';
 import Pengaturan from './pages/Pengaturan';
 import Laporan from './pages/Laporan';
 import ReceiptPage from './pages/ReceiptPage';
+
+function RouteTracker() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem('pos_last_route');
+    const isInitialLoad = !window.sessionStorage.getItem('pos_app_loaded');
+    
+    if (isInitialLoad) {
+      window.sessionStorage.setItem('pos_app_loaded', 'true');
+      if (saved && saved !== '/' && location.pathname === '/') {
+        navigate(saved, { replace: true });
+        return;
+      }
+    }
+    
+    if (location.pathname) {
+      window.localStorage.setItem('pos_last_route', location.pathname);
+    }
+  }, [location.pathname, navigate]);
+
+  return null;
+}
 
 export default function App() {
   const [transactions, setTransactions] = useLocalStorage('pos_transactions', []);
@@ -115,6 +139,7 @@ export default function App() {
 
   return (
     <HashRouter>
+      <RouteTracker />
       <Layout darkMode={darkMode} setDarkMode={setDarkMode}>
         <Routes>
           <Route

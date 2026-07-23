@@ -354,7 +354,7 @@ export default function Laporan({ transactions, services, customers }) {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
     } catch (e) {
       console.error(e);
       XLSX.writeFile(wb, `Laporan_Laundry_${new Date().toISOString().split('T')[0]}.xlsx`);
@@ -392,7 +392,20 @@ export default function Laporan({ transactions, services, customers }) {
       headStyles: { fillColor: [33, 37, 41] },
     });
     
-    doc.save(`Laporan_Laundry_${new Date().toISOString().split('T')[0]}.pdf`);
+    try {
+      const blob = doc.output('blob');
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Laporan_Laundry_${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+    } catch (e) {
+      console.error(e);
+      doc.save(`Laporan_Laundry_${new Date().toISOString().split('T')[0]}.pdf`);
+    }
   };
 
   const handlePrintReport = () => {
