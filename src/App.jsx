@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { HashRouter, Routes, Route } from 'react-router-dom';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { DEFAULT_SERVICES, DEFAULT_SETTINGS } from './utils/constants';
 import { exportJSON, importJSON } from './utils/helpers';
@@ -27,6 +27,60 @@ export default function App() {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
   }, [darkMode]);
+
+  // ── Keep-alive: touch localStorage every 5 minutes to keep session active ──
+  useEffect(() => {
+    const keepAlive = setInterval(() => {
+      try {
+        const timestamp = new Date().toISOString();
+        window.localStorage.setItem('pos_last_active', timestamp);
+        // Re-read and re-write all data to ensure localStorage stays fresh
+        const keys = ['pos_transactions', 'pos_customers', 'pos_services', 'pos_settings'];
+        keys.forEach((key) => {
+          const data = window.localStorage.getItem(key);
+          if (data) {
+            window.localStorage.setItem(key, data);
+          }
+        });
+      } catch (e) {
+        console.warn('Keep-alive localStorage touch failed:', e);
+      }
+    }, 5 * 60 * 1000); // Every 5 minutes
+
+    return () => clearInterval(keepAlive);
+  }, []);
+
+  // ── Prevent accidental page close / refresh losing state ──
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      // Touch localStorage one more time on close
+      try {
+        window.localStorage.setItem('pos_last_active', new Date().toISOString());
+      } catch (err) {
+        // ignore
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
+
+  // ── Error recovery: catch unhandled errors ──
+  useEffect(() => {
+    const handleError = (event) => {
+      console.error('Unhandled error:', event.error);
+      event.preventDefault();
+    };
+    const handleRejection = (event) => {
+      console.error('Unhandled promise rejection:', event.reason);
+      event.preventDefault();
+    };
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleRejection);
+    return () => {
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleRejection);
+    };
+  }, []);
 
   // Backup & Restore functions
   const handleBackup = () => {
@@ -60,7 +114,7 @@ export default function App() {
   };
 
   return (
-    <BrowserRouter>
+    <HashRouter>
       <Layout darkMode={darkMode} setDarkMode={setDarkMode}>
         <Routes>
           <Route
@@ -158,6 +212,6 @@ export default function App() {
         className="hidden"
         onChange={handleRestore}
       />
-    </BrowserRouter>
+    </HashRouter>
   );
 }

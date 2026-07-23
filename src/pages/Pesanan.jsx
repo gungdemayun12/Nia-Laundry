@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Search, Trash2, Eye, ChevronDown } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { StatusBadge } from '../components/UI';
@@ -6,12 +7,88 @@ import Modal from '../components/Modal';
 import { formatRupiah, formatDateTime, formatDate } from '../utils/helpers';
 import { STATUS_OPTIONS } from '../utils/constants';
 
+/* ── Floating Status Dropdown (rendered via Portal) ── */
+function StatusDropdownPortal({ anchorRef, txId, currentStatus, onStatusChange, onClose }) {
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    if (!anchorRef?.current) return;
+    const rect = anchorRef.current.getBoundingClientRect();
+    setPos({
+      top: rect.bottom + 4,
+      left: rect.right - 140,
+    });
+  }, [anchorRef]);
+
+  // Close when clicking outside
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target) &&
+          anchorRef?.current && !anchorRef.current.contains(e.target)) {
+        onClose();
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [onClose, anchorRef]);
+
+  return createPortal(
+    <div
+      ref={dropdownRef}
+      style={{
+        position: 'fixed',
+        top: pos.top,
+        left: pos.left,
+        zIndex: 99998,
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
+        borderRadius: 10,
+        boxShadow: '0 8px 30px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05)',
+        overflow: 'hidden',
+        minWidth: 150,
+        animation: 'modalFadeIn 0.12s ease-out',
+      }}
+    >
+      {STATUS_OPTIONS.map((s) => (
+        <button
+          key={s}
+          onClick={() => onStatusChange(txId, s)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            width: '100%', padding: '10px 14px',
+            background: currentStatus === s ? 'var(--accent-bg)' : 'transparent',
+            border: 'none', cursor: 'pointer',
+            fontSize: 13, color: 'var(--text)', textAlign: 'left',
+            borderBottom: '1px solid var(--border)',
+            transition: 'background 0.1s',
+          }}
+          onMouseEnter={(e) => { if (currentStatus !== s) e.currentTarget.style.background = 'var(--surface-2)'; }}
+          onMouseLeave={(e) => { if (currentStatus !== s) e.currentTarget.style.background = 'transparent'; }}
+        >
+          <StatusBadge status={s} />
+          {currentStatus === s && <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-3)' }}>✓</span>}
+        </button>
+      ))}
+      <style>{`
+        @keyframes modalFadeIn {
+          from { opacity: 0; transform: translateY(-4px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+    </div>,
+    document.getElementById('modal-root') || document.body
+  );
+}
+
 export default function Pesanan({ transactions, setTransactions }) {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [selectedIds, setSelectedIds] = useState([]);
   const [detailTx, setDetailTx] = useState(null);
   const [statusDropdown, setStatusDropdown] = useState(null);
+  const dropdownAnchorRef = useRef(null);
+  const anchorRefs = useRef({});
 
   const filtered = useMemo(() => {
     return transactions
@@ -95,6 +172,10 @@ export default function Pesanan({ transactions, setTransactions }) {
   const handleStatusChange = (id, newStatus) => {
     setTransactions((prev) => prev.map((t) => t.id === id ? { ...t, status: newStatus } : t));
     setStatusDropdown(null);
+  };
+
+  const toggleDropdown = (txId) => {
+    setStatusDropdown(statusDropdown === txId ? null : txId);
   };
 
   return (
@@ -231,55 +312,24 @@ export default function Pesanan({ transactions, setTransactions }) {
                           <Eye size={14} />
                         </button>
 
-                        {/* Status Dropdown */}
-                        <div style={{ position: 'relative' }}>
-                          <button
-                            onClick={() => setStatusDropdown(statusDropdown === t.id ? null : t.id)}
-                            style={{
-                              width: 30, height: 30, borderRadius: 8, border: '1.5px solid transparent',
-                              background: 'transparent', cursor: 'pointer',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              color: 'var(--green)',
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--green-bg)'}
-                            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                            title="Ubah Status"
-                          >
-                            <ChevronDown size={14} />
-                          </button>
-                          {statusDropdown === t.id && (
-                            <div style={{
-                              position: 'absolute', top: 'calc(100% + 4px)', right: 0,
-                              zIndex: 10001,
-                              background: 'var(--surface)',
-                              border: '1px solid var(--border)',
-                              borderRadius: 10,
-                              boxShadow: 'var(--shadow-lg)',
-                              overflow: 'hidden',
-                              minWidth: 140,
-                            }}>
-                              {STATUS_OPTIONS.map((s) => (
-                                <button
-                                  key={s}
-                                  onClick={() => handleStatusChange(t.id, s)}
-                                  style={{
-                                    display: 'flex', alignItems: 'center', gap: 8,
-                                    width: '100%', padding: '10px 14px',
-                                    background: t.status === s ? 'var(--accent-bg)' : 'transparent',
-                                    border: 'none', cursor: 'pointer',
-                                    fontSize: 13, color: 'var(--text)', textAlign: 'left',
-                                    borderBottom: '1px solid var(--border)',
-                                  }}
-                                  onMouseEnter={(e) => { if (t.status !== s) e.currentTarget.style.background = 'var(--surface-2)'; }}
-                                  onMouseLeave={(e) => { if (t.status !== s) e.currentTarget.style.background = 'transparent'; }}
-                                >
-                                  <StatusBadge status={s} />
-                                  {t.status === s && <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-3)' }}>✓</span>}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
+                        {/* Status Dropdown Trigger */}
+                        <button
+                          ref={(el) => { anchorRefs.current[t.id] = el; }}
+                          onClick={() => toggleDropdown(t.id)}
+                          style={{
+                            width: 30, height: 30, borderRadius: 8, border: '1.5px solid transparent',
+                            background: statusDropdown === t.id ? 'var(--green-bg)' : 'transparent',
+                            cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            color: 'var(--green)',
+                            transition: 'background 0.1s',
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = 'var(--green-bg)'}
+                          onMouseLeave={(e) => { if (statusDropdown !== t.id) e.currentTarget.style.background = 'transparent'; }}
+                          title="Ubah Status"
+                        >
+                          <ChevronDown size={14} />
+                        </button>
 
                         {/* Delete Button */}
                         <button
@@ -316,6 +366,17 @@ export default function Pesanan({ transactions, setTransactions }) {
           <span>Klik ikon untuk melihat detail atau mengubah status</span>
         </div>
       </div>
+
+      {/* Status Dropdown Portal */}
+      {statusDropdown && anchorRefs.current[statusDropdown] && (
+        <StatusDropdownPortal
+          anchorRef={{ current: anchorRefs.current[statusDropdown] }}
+          txId={statusDropdown}
+          currentStatus={filtered.find(t => t.id === statusDropdown)?.status}
+          onStatusChange={handleStatusChange}
+          onClose={() => setStatusDropdown(null)}
+        />
+      )}
 
       {/* Detail Modal */}
       <Modal isOpen={!!detailTx} onClose={() => setDetailTx(null)} title={`Detail Pesanan — ${detailTx?.id}`} maxWidth="480px">
@@ -383,14 +444,6 @@ export default function Pesanan({ transactions, setTransactions }) {
           </div>
         )}
       </Modal>
-
-      {/* Click outside to close dropdown */}
-      {statusDropdown && (
-        <div
-          style={{ position: 'fixed', inset: 0 }}
-          onClick={() => setStatusDropdown(null)}
-        />
-      )}
     </div>
   );
 }

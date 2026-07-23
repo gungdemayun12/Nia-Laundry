@@ -1,39 +1,55 @@
+import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 export default function Modal({ isOpen, onClose, title, maxWidth = '440px', children }) {
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = ''; };
+    }
+  }, [isOpen]);
+
+  // Close on Escape key
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKey = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
-  return (
+  const modalContent = (
     <div style={{
-      position: 'fixed', inset: 0, zIndex: 9999,
+      position: 'fixed', inset: 0, zIndex: 99999,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       padding: '20px',
-      overflowY: 'auto',
     }}>
-      {/* Backdrop — softer, not too dark */}
+      {/* Backdrop */}
       <div
         onClick={onClose}
         style={{
-          position: 'fixed', inset: 0,
-          background: 'rgba(0,0,0,0.25)',
-          backdropFilter: 'blur(2px)',
-          animation: 'fadeIn 0.15s ease-out',
+          position: 'fixed', inset: 0, zIndex: 99999,
+          background: 'rgba(0,0,0,0.35)',
+          backdropFilter: 'blur(4px)',
+          animation: 'modalFadeIn 0.15s ease-out',
         }}
       />
 
-      {/* Dialog — clean white, sharp shadow */}
+      {/* Dialog */}
       <div style={{
         position: 'relative', width: '100%', maxWidth,
+        zIndex: 100000,
         background: '#ffffff',
         border: '1px solid #e5e7eb',
         borderRadius: 14,
-        boxShadow: '0 20px 60px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05)',
-        overflow: 'hidden',
-        animation: 'modalIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-        maxHeight: '85vh',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.05)',
+        animation: 'modalSlideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+        maxHeight: '90vh',
         display: 'flex',
         flexDirection: 'column',
-        margin: 'auto',
       }}>
         {/* Header */}
         {title && (
@@ -43,6 +59,7 @@ export default function Modal({ isOpen, onClose, title, maxWidth = '440px', chil
             borderBottom: '1px solid #f3f4f6',
             background: '#ffffff',
             flexShrink: 0,
+            borderRadius: '14px 14px 0 0',
           }}>
             <p style={{ fontSize: 15, fontWeight: 700, color: '#111827', letterSpacing: '-0.01em' }}>{title}</p>
             <button
@@ -62,27 +79,32 @@ export default function Modal({ isOpen, onClose, title, maxWidth = '440px', chil
           </div>
         )}
 
-        {/* Body — light gray inset for depth */}
+        {/* Body — scrollable */}
         <div style={{
           padding: 24,
           background: '#ffffff',
           overflowY: 'auto',
           flex: 1,
+          borderRadius: title ? '0 0 14px 14px' : 14,
         }}>
           {children}
         </div>
       </div>
 
       <style>{`
-        @keyframes fadeIn {
+        @keyframes modalFadeIn {
           from { opacity: 0; }
           to { opacity: 1; }
         }
-        @keyframes modalIn {
+        @keyframes modalSlideIn {
           from { opacity: 0; transform: translateY(16px) scale(0.96); }
           to   { opacity: 1; transform: translateY(0) scale(1); }
         }
       `}</style>
     </div>
   );
+
+  // Render via portal to #modal-root (or fallback to body)
+  const portalTarget = document.getElementById('modal-root') || document.body;
+  return createPortal(modalContent, portalTarget);
 }
