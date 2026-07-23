@@ -18,10 +18,9 @@ import {
 import {
   Download, ArrowUpRight, ArrowDownRight, Printer,
 } from 'lucide-react';
-import { formatRupiah, getStartOfDay, getStartOfWeek, getStartOfMonth } from '../utils/helpers';
+import { formatRupiah, getStartOfDay, getStartOfWeek, getStartOfMonth, exportCSV } from '../utils/helpers';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
 
 ChartJS.register(
   CategoryScale,
@@ -341,24 +340,7 @@ export default function Laporan({ transactions, services, customers }) {
       'Total Bayar (Rp)': t.totalBayar,
       Status: t.status,
     }));
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Laporan");
-    try {
-      const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-      const dataBlob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
-      const url = window.URL.createObjectURL(dataBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `Laporan_Laundry_${new Date().toISOString().split('T')[0]}.xlsx`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-    } catch (e) {
-      console.error(e);
-      XLSX.writeFile(wb, `Laporan_Laundry_${new Date().toISOString().split('T')[0]}.xlsx`);
-    }
+    exportCSV(data, `Laporan_Laundry_${new Date().toISOString().split('T')[0]}.csv`);
   };
 
   const handleExportPDF = () => {
@@ -392,20 +374,7 @@ export default function Laporan({ transactions, services, customers }) {
       headStyles: { fillColor: [33, 37, 41] },
     });
     
-    try {
-      const blob = doc.output('blob');
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `Laporan_Laundry_${new Date().toISOString().split('T')[0]}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-    } catch (e) {
-      console.error(e);
-      doc.save(`Laporan_Laundry_${new Date().toISOString().split('T')[0]}.pdf`);
-    }
+    doc.save(`Laporan_Laundry_${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
   const handlePrintReport = () => {

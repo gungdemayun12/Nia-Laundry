@@ -14,6 +14,7 @@ import DataPelanggan from './pages/DataPelanggan';
 import Layanan from './pages/Layanan';
 import Pengaturan from './pages/Pengaturan';
 import Laporan from './pages/Laporan';
+import TutupKasir from './pages/TutupKasir';
 import ReceiptPage from './pages/ReceiptPage';
 
 function RouteTracker() {
@@ -45,6 +46,7 @@ export default function App() {
   const [customers, setCustomers] = useLocalStorage('pos_customers', []);
   const [services, setServices] = useLocalStorage('pos_services', DEFAULT_SERVICES);
   const [settings, setSettings] = useLocalStorage('pos_settings', DEFAULT_SETTINGS);
+  const [dailyClosings, setDailyClosings] = useLocalStorage('pos_daily_closings', []);
   const [darkMode, setDarkMode] = useLocalStorage('pos_dark_mode', false);
 
   // Apply dark mode
@@ -113,6 +115,7 @@ export default function App() {
       pos_customers: customers,
       pos_services: services,
       pos_settings: settings,
+      pos_daily_closings: dailyClosings,
       exportDate: new Date().toISOString(),
     };
     exportJSON(data, `backup-pos-laundry-${new Date().toISOString().split('T')[0]}.json`);
@@ -129,6 +132,7 @@ export default function App() {
       if (data.pos_customers) setCustomers(data.pos_customers);
       if (data.pos_services) setServices(data.pos_services);
       if (data.pos_settings) setSettings(data.pos_settings);
+      if (data.pos_daily_closings) setDailyClosings(data.pos_daily_closings);
       Swal.fire({ icon: 'success', title: 'Berhasil', text: 'Data berhasil direstore!', showCloseButton: true });
     } catch (err) {
       console.error(err);
@@ -219,6 +223,16 @@ export default function App() {
               <Laporan
                 transactions={transactions}
                 services={services}
+              />
+            }
+          />
+          <Route
+            path="/tutup-kasir"
+            element={
+              <TutupKasir
+                transactions={transactions}
+                dailyClosings={dailyClosings}
+                setDailyClosings={setDailyClosings}
               />
             }
           />

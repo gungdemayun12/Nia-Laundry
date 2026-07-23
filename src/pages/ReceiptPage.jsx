@@ -171,15 +171,20 @@ export default function ReceiptPage() {
 
       <style>{`
         @media print {
-          body > * { display: none !important; }
+          body * {
+            visibility: hidden;
+          }
+          #receipt-capture, #receipt-capture * {
+            visibility: visible;
+          }
           #receipt-capture {
-            display: block !important;
             position: absolute !important;
-            left: 50% !important;
+            left: 0 !important;
             top: 0 !important;
-            transform: translateX(-50%) !important;
+            margin: 0 !important;
             box-shadow: none !important;
             border-radius: 0 !important;
+            transform: none !important;
           }
           @page { margin: 0; size: auto; }
         }

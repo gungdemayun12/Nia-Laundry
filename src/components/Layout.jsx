@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, PlusCircle, ClipboardList,
-  Users, Settings, BarChart3, Menu, X, Shirt, Moon, Sun, Clock, Tag, Archive,
+  Users, Settings, BarChart3, Menu, X, Shirt, Moon, Sun, Clock, Tag, Archive, Calculator
 } from 'lucide-react';
 
 const navItems = [
@@ -14,6 +14,7 @@ const navItems = [
   { to: '/layanan', label: 'Layanan', icon: Tag },
   { to: '/pengaturan', label: 'Pengaturan', icon: Settings },
   { to: '/laporan', label: 'Laporan', icon: BarChart3 },
+  { to: '/tutup-kasir', label: 'Tutup Kasir', icon: Calculator },
 ];
 
 export default function Layout({ children, darkMode, setDarkMode }) {

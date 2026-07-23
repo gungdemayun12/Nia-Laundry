@@ -108,7 +108,6 @@ export function exportCSV(data, filename) {
   link.href = URL.createObjectURL(blob);
   link.download = filename;
   link.click();
-  URL.revokeObjectURL(link.href);
 }
 
 export function exportJSON(data, filename) {
@@ -117,7 +116,6 @@ export function exportJSON(data, filename) {
   link.href = URL.createObjectURL(blob);
   link.download = filename;
   link.click();
-  URL.revokeObjectURL(link.href);
 }
 
 export function importJSON(file) {
