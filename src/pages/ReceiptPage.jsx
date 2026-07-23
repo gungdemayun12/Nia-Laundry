@@ -119,8 +119,15 @@ export default function ReceiptPage() {
         justifyContent: 'space-between',
         alignItems: 'center',
       }}>
-        <button className="btn btn-secondary" onClick={() => navigate(-1)}>
-          <ArrowLeft size={16} /> Kembali
+        <button className="btn btn-secondary" onClick={() => {
+          if (window.history.length <= 2) {
+            window.close();
+            setTimeout(() => navigate('/'), 100);
+          } else {
+            navigate(-1);
+          }
+        }}>
+          <ArrowLeft size={16} /> Tutup / Kembali
         </button>
         <div style={{ display: 'flex', gap: 8 }}>
           <button 

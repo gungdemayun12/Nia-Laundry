@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { formatRupiah, getStartOfDay, getStartOfWeek, getStartOfMonth } from '../utils/helpers';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 
 ChartJS.register(
@@ -344,7 +344,21 @@ export default function Laporan({ transactions, services, customers }) {
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Laporan");
-    XLSX.writeFile(wb, `Laporan_Laundry_${new Date().toISOString().split('T')[0]}.xlsx`);
+    try {
+      const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+      const dataBlob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' });
+      const url = window.URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Laporan_Laundry_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error(e);
+      XLSX.writeFile(wb, `Laporan_Laundry_${new Date().toISOString().split('T')[0]}.xlsx`);
+    }
   };
 
   const handleExportPDF = () => {
@@ -369,7 +383,7 @@ export default function Laporan({ transactions, services, customers }) {
       tableRows.push(rowData);
     });
 
-    doc.autoTable({
+    autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
       startY: 35,
