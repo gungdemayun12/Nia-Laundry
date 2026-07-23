@@ -42,10 +42,10 @@ export default function Modal({ isOpen, onClose, title, maxWidth = '440px', chil
       <div style={{
         position: 'relative', width: '100%', maxWidth,
         zIndex: 100000,
-        background: '#ffffff',
-        border: '1px solid #e5e7eb',
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
         borderRadius: 14,
-        boxShadow: '0 20px 60px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.05)',
+        boxShadow: 'var(--shadow-lg)',
         animation: 'modalSlideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
         maxHeight: '90vh',
         display: 'flex',
@@ -56,23 +56,23 @@ export default function Modal({ isOpen, onClose, title, maxWidth = '440px', chil
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             padding: '18px 24px',
-            borderBottom: '1px solid #f3f4f6',
-            background: '#ffffff',
+            borderBottom: '1px solid var(--border)',
+            background: 'var(--surface)',
             flexShrink: 0,
             borderRadius: '14px 14px 0 0',
           }}>
-            <p style={{ fontSize: 15, fontWeight: 700, color: '#111827', letterSpacing: '-0.01em' }}>{title}</p>
+            <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>{title}</p>
             <button
               onClick={onClose}
               style={{
-                width: 32, height: 32, borderRadius: 8, border: '1px solid #e5e7eb',
-                background: '#ffffff', cursor: 'pointer',
+                width: 32, height: 32, borderRadius: 8, border: '1px solid var(--border)',
+                background: 'var(--surface)', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#6b7280',
+                color: 'var(--text-3)',
                 transition: 'all 0.12s',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#f9fafb'; e.currentTarget.style.borderColor = '#d1d5db'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = '#ffffff'; e.currentTarget.style.borderColor = '#e5e7eb'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--surface-2)'; e.currentTarget.style.borderColor = 'var(--accent-border)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--surface)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
             >
               <X size={16} />
             </button>
@@ -82,7 +82,7 @@ export default function Modal({ isOpen, onClose, title, maxWidth = '440px', chil
         {/* Body — scrollable */}
         <div style={{
           padding: 24,
-          background: '#ffffff',
+          background: 'var(--surface)',
           overflowY: 'auto',
           flex: 1,
           borderRadius: title ? '0 0 14px 14px' : 14,

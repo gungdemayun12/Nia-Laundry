@@ -202,6 +202,9 @@ export default function RiwayatPesanan({ transactions, setTransactions }) {
                       </div>
                     </td>
                     <td style={{ padding: '12px 16px', color: 'var(--text)', whiteSpace: 'nowrap', fontWeight: 500 }}>
+                      {t.totalBerat} kg
+                    </td>
+                    <td style={{ padding: '12px 16px', color: 'var(--text)', whiteSpace: 'nowrap', fontWeight: 500 }}>
                       {formatRupiah(t.totalBayar)}
                     </td>
                     <td style={{ padding: '12px 16px' }}>

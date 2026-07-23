@@ -18,7 +18,10 @@ import {
 import {
   Download, ArrowUpRight, ArrowDownRight, Printer,
 } from 'lucide-react';
-import { formatRupiah, exportCSV, getStartOfDay, getStartOfWeek, getStartOfMonth } from '../utils/helpers';
+import { formatRupiah, getStartOfDay, getStartOfWeek, getStartOfMonth } from '../utils/helpers';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 ChartJS.register(
   CategoryScale,
@@ -328,18 +331,54 @@ export default function Laporan({ transactions, services, customers }) {
     ],
   };
 
-  const handleExport = () => {
+  const handleExportExcel = () => {
     const data = filteredTx.map((t) => ({
       'No. Invoice': t.id,
       Tanggal: new Date(t.tanggal).toLocaleString('id-ID'),
       Pelanggan: t.pelanggan?.nama || '-',
       Layanan: t.items?.map((i) => i.layanan).join('; ') || '-',
-      'Total Berat': t.totalBerat,
-      Diskon: t.diskon,
-      'Total Bayar': t.totalBayar,
+      'Total Berat (kg)': t.totalBerat,
+      'Total Bayar (Rp)': t.totalBayar,
       Status: t.status,
     }));
-    exportCSV(data, `laporan-laundry-${new Date().toISOString().split('T')[0]}.csv`);
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Laporan");
+    XLSX.writeFile(wb, `Laporan_Laundry_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text('Laporan Transaksi Laundry', 14, 20);
+    doc.setFontSize(10);
+    doc.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')}`, 14, 28);
+    
+    const tableColumn = ["No. Invoice", "Tanggal", "Pelanggan", "Berat", "Total", "Status"];
+    const tableRows = [];
+
+    filteredTx.forEach(t => {
+      const rowData = [
+        t.id,
+        new Date(t.tanggal).toLocaleDateString('id-ID'),
+        t.pelanggan?.nama || '-',
+        `${t.totalBerat} kg`,
+        formatRupiah(t.totalBayar),
+        t.status
+      ];
+      tableRows.push(rowData);
+    });
+
+    doc.autoTable({
+      head: [tableColumn],
+      body: tableRows,
+      startY: 35,
+      theme: 'striped',
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [33, 37, 41] },
+    });
+    
+    doc.save(`Laporan_Laundry_${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
   const handlePrintReport = () => {
@@ -493,12 +532,15 @@ export default function Laporan({ transactions, services, customers }) {
                 Reset
               </button>
             )}
-            <button className="btn btn-secondary" onClick={handleExport} style={{ padding: '7px 14px', fontSize: 12 }}>
-              <Download size={14} /> Export
-            </button>
-            <button className="btn btn-secondary" onClick={handlePrintReport} style={{ padding: '7px 14px', fontSize: 12 }}>
-              <Printer size={14} /> Print
-            </button>
+              <button className="btn btn-secondary" onClick={handleExportExcel} style={{ padding: '8px 16px', fontSize: 12 }}>
+                <Download size={14} /> Excel
+              </button>
+              <button className="btn btn-secondary" onClick={handleExportPDF} style={{ padding: '8px 16px', fontSize: 12 }}>
+                <Download size={14} /> PDF
+              </button>
+              <button className="btn btn-secondary" onClick={handlePrintReport} style={{ padding: '8px 16px', fontSize: 12 }}>
+                <Printer size={14} /> Cetak
+              </button>
           </div>
         </div>
       </div>
