@@ -16,6 +16,7 @@ import Pengaturan from './pages/Pengaturan';
 import Laporan from './pages/Laporan';
 import TutupKasir from './pages/TutupKasir';
 import ReceiptPage from './pages/ReceiptPage';
+import Login from './pages/Login';
 
 function RouteTracker() {
   const location = useLocation();
@@ -48,6 +49,7 @@ export default function App() {
   const [settings, setSettings] = useLocalStorage('pos_settings', DEFAULT_SETTINGS);
   const [dailyClosings, setDailyClosings] = useLocalStorage('pos_daily_closings', []);
   const [darkMode, setDarkMode] = useLocalStorage('pos_dark_mode', false);
+  const [isAuthenticated, setIsAuthenticated] = useLocalStorage('pos_is_auth', false);
 
   // Apply dark mode
   useEffect(() => {
@@ -141,10 +143,14 @@ export default function App() {
     e.target.value = '';
   };
 
+  if (!isAuthenticated) {
+    return <Login onLogin={() => setIsAuthenticated(true)} />;
+  }
+
   return (
     <HashRouter>
       <RouteTracker />
-      <Layout darkMode={darkMode} setDarkMode={setDarkMode}>
+      <Layout darkMode={darkMode} setDarkMode={setDarkMode} onLogout={() => setIsAuthenticated(false)}>
         <Routes>
           <Route
             path="/"

@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, PlusCircle, ClipboardList,
-  Users, Settings, BarChart3, Menu, X, Shirt, Moon, Sun, Clock, Tag, Archive, Calculator
+  Users, Settings, BarChart3, Menu, X, Shirt, Moon, Sun, Clock, Tag, Archive, Calculator, LogOut
 } from 'lucide-react';
+import LogoImage from '../assets/nia laundry.png';
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -17,7 +18,7 @@ const navItems = [
   { to: '/tutup-kasir', label: 'Tutup Kasir', icon: Calculator },
 ];
 
-export default function Layout({ children, darkMode, setDarkMode }) {
+export default function Layout({ children, darkMode, setDarkMode, onLogout }) {
   const [open, setOpen] = useState(false);
   const location = useLocation();
   const [time, setTime] = useState(new Date());
@@ -72,12 +73,11 @@ export default function Layout({ children, darkMode, setDarkMode }) {
           borderBottom: '1px solid var(--border)',
         }}>
           <div style={{
-            width: 38, height: 38, borderRadius: 11, flexShrink: 0,
-            background: 'var(--text)',
+            width: 42, height: 42, borderRadius: 11, flexShrink: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+            overflow: 'hidden',
           }}>
-            <Shirt size={19} color="#fff" />
+            <img src={LogoImage} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
           <div style={{ minWidth: 0 }}>
             <p style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)', lineHeight: 1.2, letterSpacing: '-0.02em' }}>POS Laundry</p>
@@ -161,6 +161,22 @@ export default function Layout({ children, darkMode, setDarkMode }) {
             {darkMode ? <Sun size={16} /> : <Moon size={16} />}
             {darkMode ? 'Mode Terang' : 'Mode Gelap'}
           </button>
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+                padding: '10px 14px', borderRadius: 10, background: 'var(--red-bg)', border: '1px solid var(--red-border)',
+                fontSize: 13, fontWeight: 600, color: 'var(--red)', cursor: 'pointer',
+                marginTop: 6, transition: 'all 0.15s',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.opacity = 0.8; }}
+              onMouseLeave={(e) => { e.currentTarget.style.opacity = 1; }}
+            >
+              <LogOut size={16} />
+              Keluar
+            </button>
+          )}
         </div>
       </aside>
 

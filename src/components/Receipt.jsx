@@ -1,5 +1,6 @@
 import { forwardRef } from 'react';
 import { formatRupiah, formatDateTime, formatDate } from '../utils/helpers';
+import LogoImage from '../assets/nia laundry.png';
 
 const Receipt = forwardRef(function Receipt({ transaction, settings, id }, ref) {
   if (!transaction) return null;
@@ -28,8 +29,13 @@ const Receipt = forwardRef(function Receipt({ transaction, settings, id }, ref) 
     >
       {/* Header */}
       <div style={{ textAlign: 'center', marginBottom: 8, paddingBottom: 8, borderBottom: '1px dashed #000' }}>
+        <img 
+          src={LogoImage} 
+          alt="Logo" 
+          style={{ width: is58mm ? 36 : 48, height: 'auto', marginBottom: 4, filter: 'grayscale(100%)' }} 
+        />
         <div style={{ fontWeight: 'bold', fontSize: titleSize, marginBottom: 4 }}>
-          {settings?.namaToko || 'LAUNDRY'}
+          {settings?.namaToko || 'NIA LAUNDRY'}
         </div>
         {settings?.alamat && (
           <div style={{ fontSize: smallSize, marginBottom: 2 }}>{settings.alamat}</div>
