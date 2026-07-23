@@ -202,3 +202,4 @@ export default function TutupKasir({ transactions, dailyClosings, setDailyClosin
       </div>
     </div>
   );
+}
