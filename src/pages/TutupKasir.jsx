@@ -90,17 +90,23 @@ export default function TutupKasir({ transactions, dailyClosings, setDailyClosin
             </div>
 
             <div>
-              <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: 'var(--text)' }}>
+              <label className="field-label" style={{ marginBottom: 10 }}>
                 Uang Fisik di Laci (Rp)
               </label>
-              <input
-                type="number"
-                className="input"
-                placeholder="Masukkan jumlah uang aktual..."
-                value={cashInDrawer}
-                onChange={(e) => setCashInDrawer(e.target.value)}
-                style={{ fontSize: 18, fontWeight: 700 }}
-              />
+              <div style={{ position: 'relative' }}>
+                <span style={{ 
+                  position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', 
+                  fontSize: 18, fontWeight: 700, color: 'var(--text-3)' 
+                }}>Rp</span>
+                <input
+                  type="number"
+                  className="field-input"
+                  placeholder="0"
+                  value={cashInDrawer}
+                  onChange={(e) => setCashInDrawer(e.target.value)}
+                  style={{ fontSize: 24, fontWeight: 800, paddingLeft: 48, paddingBlock: 16 }}
+                />
+              </div>
             </div>
 
             {cashInDrawer !== '' && (
