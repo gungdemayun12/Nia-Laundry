@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Search, Trash2, Eye, ChevronDown } from 'lucide-react';
+import { Search, Trash2, Eye, ChevronDown, Printer } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { StatusBadge } from '../components/UI';
 import Modal from '../components/Modal';
@@ -334,6 +334,21 @@ export default function Pesanan({ transactions, setTransactions }) {
                           <ChevronDown size={14} />
                         </button>
 
+                        <button
+                          onClick={() => window.open(`#/struk/${t.id}`, '_blank')}
+                          style={{
+                            width: 30, height: 30, borderRadius: 8, border: '1.5px solid transparent',
+                            background: 'transparent', cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            color: 'var(--text-3)',
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--surface-2)'; e.currentTarget.style.color = 'var(--text)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-3)'; }}
+                          title="Cetak Struk"
+                        >
+                          <Printer size={14} />
+                        </button>
+
                         {/* Delete Button */}
                         <button
                           onClick={() => handleDelete(t.id)}
@@ -395,12 +410,10 @@ export default function Pesanan({ transactions, setTransactions }) {
                 <span style={{ fontSize: 13, color: 'var(--text-2)' }}>Pelanggan</span>
                 <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{detailTx.pelanggan?.nama || '-'}</span>
               </div>
-              {detailTx.pelanggan?.noHp && (
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: 13, color: 'var(--text-2)' }}>No. HP</span>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{detailTx.pelanggan.noHp}</span>
-                </div>
-              )}
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 13, color: 'var(--text-2)' }}>No. HP</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{detailTx.pelanggan?.noHp || 'Tidak ada'}</span>
+              </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ fontSize: 13, color: 'var(--text-2)' }}>Tanggal</span>
                 <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{formatDateTime(detailTx.tanggal)}</span>
