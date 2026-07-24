@@ -80,7 +80,7 @@ export default function Layout({ children, darkMode, setDarkMode, onLogout }) {
             <img src={LogoImage} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 2 }} />
           </div>
           <div style={{ minWidth: 0 }}>
-            <p style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)', lineHeight: 1.2, letterSpacing: '-0.02em' }}>POS Laundry</p>
+            <p style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)', lineHeight: 1.2, letterSpacing: '-0.02em' }}>Nia Laundry</p>
             <p style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-3)', marginTop: 2 }}>Point of Sale</p>
           </div>
           <button
