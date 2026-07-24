@@ -48,7 +48,7 @@ export default function Login({ onLogin }) {
           <img 
             src={LogoImage} 
             alt="Nia Laundry Logo" 
-            style={{ width: 120, height: 120, marginBottom: 16, borderRadius: '50%', background: '#ffffff', objectFit: 'contain', padding: 8, border: '1px solid #eee' }} 
+            style={{ display: 'block', margin: '0 auto 16px auto', width: 120, height: 120, borderRadius: '50%', background: '#ffffff', objectFit: 'contain', padding: 8, border: '1px solid #eee' }} 
           />
           <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.02em', marginBottom: 6 }}>
             Selamat Datang
