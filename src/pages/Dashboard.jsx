@@ -286,7 +286,7 @@ export default function Dashboard({ transactions, setTransactions }) {
                     padding: '5px 14px', borderRadius: 7, border: 'none', cursor: 'pointer',
                     fontSize: 12, fontWeight: 600, transition: 'all 0.15s',
                     background: period === k ? 'var(--text)' : 'transparent',
-                    color: period === k ? '#fff' : 'var(--text-3)',
+                    color: period === k ? 'var(--bg)' : 'var(--text-3)',
                   }}
                 >{l}</button>
               ))}

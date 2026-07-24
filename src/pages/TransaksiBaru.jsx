@@ -202,7 +202,7 @@ export default function TransaksiBaru({
                     width: 32, height: 32, borderRadius: 10, flexShrink: 0,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     background: isActive ? 'var(--text)' : isDone ? 'var(--green)' : 'var(--surface-2)',
-                    color: isActive || isDone ? '#fff' : 'var(--text-3)',
+                    color: isActive ? 'var(--bg)' : isDone ? '#fff' : 'var(--text-3)',
                     border: `1.5px solid ${isActive ? 'var(--text)' : isDone ? 'var(--green)' : 'var(--border)'}`,
                     transition: 'all 0.2s',
                   }}>
@@ -479,8 +479,8 @@ export default function TransaksiBaru({
                 padding: '14px 18px',
                 background: 'var(--text)',
               }}>
-                <p style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Ringkasan Pesanan</p>
-                <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>
+                <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--bg)' }}>Ringkasan Pesanan</p>
+                <p style={{ fontSize: 11, color: 'var(--bg)', opacity: 0.8, marginTop: 2 }}>
                   {validCount} layanan · {calc.totalBerat.toFixed(1)} kg
                 </p>
               </div>
@@ -541,12 +541,12 @@ export default function TransaksiBaru({
                   style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                     width: '100%', padding: 12, borderRadius: 10, border: '1.5px solid var(--text)',
-                    background: 'var(--text)', color: '#fff',
+                    background: 'var(--text)', color: 'var(--bg)',
                     fontSize: 13, fontWeight: 700, cursor: 'pointer',
                     boxShadow: 'var(--shadow-sm)',
                     transition: 'all 0.15s',
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = '#000'}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--text-2)'}
                   onMouseLeave={(e) => e.currentTarget.style.background = 'var(--text)'}
                 >
                   <CheckCircle2 size={16} />
