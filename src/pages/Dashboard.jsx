@@ -10,7 +10,7 @@ import {
   AlertTriangle, TrendingUp, Download, Printer, Activity, PieChart as PieChartIcon
 } from 'lucide-react';
 import { STATUS_OPTIONS } from '../utils/constants';
-import LogoImage from '../assets/nia laundry.png';
+import LogoImage from '../assets/nia_laundry.png';
 
 const COLORS = ['#212529', '#495057', '#6c757d', '#adb5bd', '#ced4da', '#f8f9fa'];
 
@@ -207,7 +207,7 @@ export default function Dashboard({ transactions, setTransactions }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* Header Banner */}
       <div className="card" style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 16 }}>
-        <img src={LogoImage} alt="Nia Laundry" style={{ width: 52, height: 52, borderRadius: 12, objectFit: 'cover' }} />
+        <img src={LogoImage} alt="Nia Laundry" style={{ width: 52, height: 52, borderRadius: '50%', background: '#ffffff', objectFit: 'contain', padding: 2, border: '1px solid var(--border)' }} />
         <div>
           <h1 style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', margin: 0 }}>Dashboard Nia Laundry</h1>
           <p style={{ fontSize: 13, color: 'var(--text-3)', margin: '2px 0 0' }}>Pantau kinerja dan statistik bisnis laundry Anda secara real-time.</p>

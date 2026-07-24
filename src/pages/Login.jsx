@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Swal from 'sweetalert2';
 import { LogIn, User, Lock } from 'lucide-react';
-import LogoImage from '../assets/nia laundry.png';
+import LogoImage from '../assets/nia_laundry.png';
 
 export default function Login({ onLogin }) {
   const [username, setUsername] = useState('');
@@ -48,7 +48,7 @@ export default function Login({ onLogin }) {
           <img 
             src={LogoImage} 
             alt="Nia Laundry Logo" 
-            style={{ width: 120, height: 'auto', marginBottom: 16, borderRadius: 12 }} 
+            style={{ width: 120, height: 120, marginBottom: 16, borderRadius: '50%', background: '#ffffff', objectFit: 'contain', padding: 8, border: '1px solid #eee' }} 
           />
           <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.02em', marginBottom: 6 }}>
             Selamat Datang

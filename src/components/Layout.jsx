@@ -4,7 +4,7 @@ import {
   LayoutDashboard, PlusCircle, ClipboardList,
   Users, Settings, BarChart3, Menu, X, Shirt, Moon, Sun, Clock, Tag, Archive, Calculator, LogOut
 } from 'lucide-react';
-import LogoImage from '../assets/nia laundry.png';
+import LogoImage from '../assets/nia_laundry.png';
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -73,11 +73,11 @@ export default function Layout({ children, darkMode, setDarkMode, onLogout }) {
           borderBottom: '1px solid var(--border)',
         }}>
           <div style={{
-            width: 42, height: 42, borderRadius: 11, flexShrink: 0,
+            width: 42, height: 42, borderRadius: '50%', flexShrink: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            overflow: 'hidden',
+            overflow: 'hidden', background: '#ffffff', border: '1px solid var(--border)',
           }}>
-            <img src={LogoImage} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <img src={LogoImage} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 2 }} />
           </div>
           <div style={{ minWidth: 0 }}>
             <p style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)', lineHeight: 1.2, letterSpacing: '-0.02em' }}>POS Laundry</p>

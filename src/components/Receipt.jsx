@@ -1,6 +1,6 @@
 import { forwardRef } from 'react';
 import { formatRupiah, formatDateTime, formatDate } from '../utils/helpers';
-import LogoImage from '../assets/nia laundry.png';
+import LogoImage from '../assets/nia_laundry.png';
 
 const Receipt = forwardRef(function Receipt({ transaction, settings, id }, ref) {
   if (!transaction) return null;
@@ -32,7 +32,18 @@ const Receipt = forwardRef(function Receipt({ transaction, settings, id }, ref) 
         <img 
           src={LogoImage} 
           alt="Logo" 
-          style={{ width: is58mm ? 36 : 48, height: 'auto', marginBottom: 4, filter: 'grayscale(100%)' }} 
+          style={{ 
+            display: 'block', 
+            margin: '0 auto 6px auto', 
+            width: is58mm ? 42 : 52, 
+            height: is58mm ? 42 : 52, 
+            filter: 'grayscale(100%)', 
+            borderRadius: '50%', 
+            background: '#ffffff', 
+            objectFit: 'contain', 
+            padding: 2, 
+            border: '0.5px solid #aaa' 
+          }} 
         />
         <div style={{ fontWeight: 'bold', fontSize: titleSize, marginBottom: 4 }}>
           {settings?.namaToko || 'NIA LAUNDRY'}
