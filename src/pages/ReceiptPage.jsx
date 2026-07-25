@@ -1,7 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Printer, Download, ArrowLeft } from 'lucide-react';
-import { formatRupiah, formatDateTime, formatDate } from '../utils/helpers';
 import html2canvas from 'html2canvas';
 import Swal from 'sweetalert2';
 import Receipt from '../components/Receipt';
@@ -102,8 +101,6 @@ export default function ReceiptPage() {
     );
   }
 
-  const is58mm = settings?.lebarKertas !== '80mm';
-
   return (
     <div style={{ 
       minHeight: '100vh', 
@@ -186,7 +183,7 @@ export default function ReceiptPage() {
             border-radius: 0 !important;
             transform: none !important;
           }
-          @page { margin: 0; size: auto; }
+          @page { margin: 0; size: ${settings?.lebarKertas === '80mm' ? '80mm' : '58mm'} auto; }
         }
         @media screen {
           .print-actions { display: none !important; }
