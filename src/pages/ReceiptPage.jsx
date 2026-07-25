@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Printer, Download, ArrowLeft } from 'lucide-react';
 import html2canvas from 'html2canvas';
