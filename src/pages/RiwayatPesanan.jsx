@@ -4,13 +4,16 @@ import Swal from 'sweetalert2';
 import { StatusBadge } from '../components/UI';
 import Modal from '../components/Modal';
 import { formatRupiah, formatDateTime, formatDate } from '../utils/helpers';
-import { STATUS_OPTIONS } from '../utils/constants';
+import { STATUS_OPTIONS, DEFAULT_SETTINGS } from '../utils/constants';
+import bluetoothPrinter, { buildReceiptBytes } from '../utils/bluetoothPrinter';
+import { isIOS } from '../utils/iosPrintFallback';
 
 export default function RiwayatPesanan({ transactions, setTransactions }) {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [selectedIds, setSelectedIds] = useState([]);
   const [detailTx, setDetailTx] = useState(null);
+  const [printingIds, setPrintingIds] = useState([]);
 
   const filtered = useMemo(() => {
     return transactions
@@ -89,6 +92,60 @@ export default function RiwayatPesanan({ transactions, setTransactions }) {
         Swal.fire({ title: 'Terhapus!', text: 'Riwayat pesanan berhasil dihapus.', icon: 'success', confirmButtonColor: 'var(--text)', showCloseButton: true, background: 'var(--surface)', color: 'var(--text)' });
       }
     });
+  };
+
+  const getCurrentSettings = () => {
+    try {
+      const saved = localStorage.getItem('pos_settings');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return DEFAULT_SETTINGS;
+  };
+
+  const handleReceiptPrint = async (t) => {
+    const onIOS = isIOS();
+    if (bluetoothPrinter.isConnected && !onIOS) {
+      if (printingIds.includes(t.id)) return;
+      setPrintingIds((prev) => [...prev, t.id]);
+      try {
+        const settings = getCurrentSettings();
+        const bytes = buildReceiptBytes(t, settings);
+        await bluetoothPrinter.sendBytes(bytes);
+        Swal.fire({
+          icon: 'success',
+          title: 'Struk Tercetak!',
+          text: `Struk ${t.id} berhasil cetak via Bluetooth.`,
+          timer: 1800,
+          showConfirmButton: false,
+          toast: true,
+          position: 'top-end',
+          background: 'var(--surface)',
+          color: 'var(--text)',
+        });
+      } catch (err) {
+        console.error('BT print from list failed:', err);
+        Swal.fire({
+          icon: 'error',
+          title: 'Gagal Cetak via BT',
+          text: err.message + '\n\nMembuka halaman struk sebagai ganti...',
+          showCloseButton: true,
+          background: 'var(--surface)',
+          color: 'var(--text)',
+        });
+        setTimeout(() => {
+          localStorage.setItem('pos_receipt_current', JSON.stringify(t));
+          window.open(`#/struk/${t.id}`, '_blank');
+        }, 500);
+      } finally {
+        setPrintingIds((prev) => prev.filter((x) => x !== t.id));
+      }
+    } else {
+      localStorage.setItem('pos_receipt_current', JSON.stringify(t));
+      if (bluetoothPrinter.isConnected) {
+        localStorage.setItem('pos_receipt_autoprint', '1');
+      }
+      window.open(`#/struk/${t.id}`, '_blank');
+    }
   };
 
   return (
@@ -229,16 +286,18 @@ export default function RiwayatPesanan({ transactions, setTransactions }) {
                         </button>
 
                         <button
-                          onClick={() => window.open(`#/struk/${t.id}`, '_blank')}
+                          onClick={() => handleReceiptPrint(t)}
+                          disabled={printingIds.includes(t.id)}
                           style={{
                             width: 30, height: 30, borderRadius: 8, border: '1.5px solid transparent',
-                            background: 'transparent', cursor: 'pointer',
+                            background: 'transparent', cursor: printingIds.includes(t.id) ? 'progress' : 'pointer',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            color: 'var(--text-3)',
+                            color: bluetoothPrinter.isConnected && !isIOS() ? 'var(--green)' : 'var(--text-3)',
+                            opacity: printingIds.includes(t.id) ? 0.6 : 1,
                           }}
-                          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--surface-2)'; e.currentTarget.style.color = 'var(--text)'; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-3)'; }}
-                          title="Cetak Struk"
+                          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--surface-2)'; e.currentTarget.style.color = bluetoothPrinter.isConnected && !isIOS() ? 'var(--green)' : 'var(--text)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = bluetoothPrinter.isConnected && !isIOS() ? 'var(--green)' : 'var(--text-3)'; }}
+                          title={bluetoothPrinter.isConnected && !isIOS() ? 'Cetak Struk via Bluetooth' : 'Lihat Struk & Cetak'}
                         >
                           <Printer size={14} />
                         </button>

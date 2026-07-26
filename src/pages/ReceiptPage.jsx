@@ -81,7 +81,8 @@ export default function ReceiptPage() {
     return unsub;
   }, []);
 
-  // Auto-print: via BT if connected, else native print (AirPrint on iOS)
+  // Auto-print: via BT if connected (non-iOS), else native print (AirPrint on iOS)
+  // HANYA jalan JIKA user memang mau auto-print (autoprint=1 / print param=1)
   useEffect(() => {
     if (!transaction || !settings) return;
     const shouldAutoPrint = localStorage.getItem('pos_receipt_autoprint') === '1';
@@ -93,12 +94,11 @@ export default function ReceiptPage() {
       setTimeout(() => {
         if (btConnected && !onIOS) {
           handleBluetoothPrint();
-        } else {
+        } else if (onIOS) {
           triggerNativePrint();
         }
+        // Jika TIDAK connect BT DAN bukan iOS → user pencet tombol sendiri
       }, 600);
-    } else if (bluetoothPrinter.isConnected && !onIOS) {
-      handleBluetoothPrint();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings]);
@@ -121,15 +121,15 @@ export default function ReceiptPage() {
         color: 'var(--text)',
       });
     } catch (err) {
+      console.error('Bluetooth print failed:', err);
       Swal.fire({
         icon: 'error',
-        title: 'Gagal Cetak BT',
-        text: err.message + '\n\nMenggunakan cetak AirPrint / WiFi sebagai ganti.',
+        title: 'Gagal Cetak via BT',
+        text: err.message + '\n\nSilakan klik tombol AirPrint / WiFi di bawah sebagai ganti, atau sambungkan ulang printer di Pengaturan.',
         showCloseButton: true,
         background: 'var(--surface)',
         color: 'var(--text)',
       });
-      setTimeout(() => triggerNativePrint(), 400);
     } finally {
       setIsBtPrinting(false);
     }
