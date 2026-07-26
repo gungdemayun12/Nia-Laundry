@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Printer, Download, ArrowLeft } from 'lucide-react';
+import { Printer, Download, ArrowLeft, Bluetooth, BluetoothConnected, Loader2 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import Swal from 'sweetalert2';
 import Receipt from '../components/Receipt';
+import bluetoothPrinter, { buildReceiptBytes } from '../utils/bluetoothPrinter';
 
 function getReceiptData(id) {
   try {
@@ -26,6 +27,8 @@ export default function ReceiptPage() {
   const [transaction] = useState(() => getReceiptData(id));
   const [settings, setSettings] = useState(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isBtPrinting, setIsBtPrinting] = useState(false);
+  const [btConnected, setBtConnected] = useState(() => bluetoothPrinter.isConnected);
   const receiptRef = useRef(null);
 
   /* eslint-disable react-hooks/set-state-in-effect */
@@ -40,8 +43,61 @@ export default function ReceiptPage() {
     }
   }, []);
 
+  // Subscribe to Bluetooth printer state changes
+  useEffect(() => {
+    const unsub = bluetoothPrinter.subscribe((state) => {
+      setBtConnected(state.isConnected);
+    });
+    return unsub;
+  }, []);
+
+  // Auto-print via Bluetooth if connected (on first mount)
+  useEffect(() => {
+    if (bluetoothPrinter.isConnected && transaction && settings) {
+      handleBluetoothPrint();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings]);
+
+  const handleBluetoothPrint = async () => {
+    if (!transaction || !settings) return;
+    setIsBtPrinting(true);
+    try {
+      const bytes = buildReceiptBytes(transaction, settings);
+      await bluetoothPrinter.sendBytes(bytes);
+      Swal.fire({
+        icon: 'success',
+        title: 'Struk Tercetak!',
+        text: 'Struk berhasil dikirim ke printer Bluetooth.',
+        timer: 2000,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end',
+        background: 'var(--surface)',
+        color: 'var(--text)',
+      });
+    } catch (err) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Gagal Cetak',
+        text: err.message + ' Menggunakan cetak biasa sebagai fallback.',
+        showCloseButton: true,
+        background: 'var(--surface)',
+        color: 'var(--text)',
+      });
+      // Fallback to window.print
+      window.print();
+    } finally {
+      setIsBtPrinting(false);
+    }
+  };
+
   const handlePrint = () => {
-    window.print();
+    if (btConnected) {
+      handleBluetoothPrint();
+    } else {
+      window.print();
+    }
   };
 
   const handleDownload = async () => {
@@ -126,7 +182,19 @@ export default function ReceiptPage() {
         }}>
           <ArrowLeft size={16} /> Tutup / Kembali
         </button>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {/* Bluetooth status indicator */}
+          {btConnected && (
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+              padding: '6px 12px', borderRadius: 20,
+              background: 'var(--green-bg)', border: '1px solid var(--green-border)',
+              fontSize: 11, fontWeight: 600, color: 'var(--green)',
+            }}>
+              <BluetoothConnected size={12} />
+              BT
+            </div>
+          )}
           <button 
             className="btn btn-secondary" 
             onClick={handleDownload}
@@ -138,9 +206,23 @@ export default function ReceiptPage() {
           <button 
             className="btn btn-primary" 
             onClick={handlePrint}
+            disabled={isBtPrinting}
             style={{ padding: '9px 16px' }}
           >
-            <Printer size={16} /> Cetak Struk
+            {isBtPrinting ? (
+              <>
+                <Loader2 size={16} className="animate-spin-slow" />
+                Mencetak...
+              </>
+            ) : btConnected ? (
+              <>
+                <Bluetooth size={16} /> Cetak via BT
+              </>
+            ) : (
+              <>
+                <Printer size={16} /> Cetak Struk
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -188,6 +270,11 @@ export default function ReceiptPage() {
         @media screen {
           .print-actions { display: none !important; }
         }
+        @keyframes spin-slow {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .animate-spin-slow { animation: spin-slow 1s linear infinite; }
       `}</style>
     </div>
   );

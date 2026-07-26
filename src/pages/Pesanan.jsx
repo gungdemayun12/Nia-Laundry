@@ -1,94 +1,16 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
-import { Search, Trash2, Eye, ChevronDown, Printer } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Search, Trash2, Eye } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { StatusBadge } from '../components/UI';
 import Modal from '../components/Modal';
 import { formatRupiah, formatDateTime, formatDate } from '../utils/helpers';
 import { STATUS_OPTIONS } from '../utils/constants';
 
-/* ── Floating Status Dropdown (rendered via Portal) ── */
-function StatusDropdownPortal({ anchorRef, txId, currentStatus, onStatusChange, onClose }) {
-  const [pos, setPos] = useState({ top: 0, left: 0 });
-  const dropdownRef = useRef(null);
-
-  useEffect(() => {
-    if (!anchorRef?.current) return;
-    const rect = anchorRef.current.getBoundingClientRect();
-    setPos({
-      top: rect.bottom + 4,
-      left: rect.right - 140,
-    });
-  }, [anchorRef]);
-
-  // Close when clicking outside
-  useEffect(() => {
-    const handleClick = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target) &&
-          anchorRef?.current && !anchorRef.current.contains(e.target)) {
-        onClose();
-      }
-    };
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [onClose, anchorRef]);
-
-  return createPortal(
-    <div
-      ref={dropdownRef}
-      style={{
-        position: 'fixed',
-        top: pos.top,
-        left: pos.left,
-        zIndex: 99998,
-        background: 'var(--surface)',
-        border: '1px solid var(--border)',
-        borderRadius: 10,
-        boxShadow: '0 8px 30px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05)',
-        overflow: 'hidden',
-        minWidth: 150,
-        animation: 'modalFadeIn 0.12s ease-out',
-      }}
-    >
-      {STATUS_OPTIONS.map((s) => (
-        <button
-          key={s}
-          onClick={() => onStatusChange(txId, s)}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            width: '100%', padding: '10px 14px',
-            background: currentStatus === s ? 'var(--accent-bg)' : 'transparent',
-            border: 'none', cursor: 'pointer',
-            fontSize: 13, color: 'var(--text)', textAlign: 'left',
-            borderBottom: '1px solid var(--border)',
-            transition: 'background 0.1s',
-          }}
-          onMouseEnter={(e) => { if (currentStatus !== s) e.currentTarget.style.background = 'var(--surface-2)'; }}
-          onMouseLeave={(e) => { if (currentStatus !== s) e.currentTarget.style.background = 'transparent'; }}
-        >
-          <StatusBadge status={s} />
-          {currentStatus === s && <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-3)' }}>✓</span>}
-        </button>
-      ))}
-      <style>{`
-        @keyframes modalFadeIn {
-          from { opacity: 0; transform: translateY(-4px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
-    </div>,
-    document.getElementById('modal-root') || document.body
-  );
-}
-
 export default function Pesanan({ transactions, setTransactions }) {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [selectedIds, setSelectedIds] = useState([]);
   const [detailTx, setDetailTx] = useState(null);
-  const [statusDropdown, setStatusDropdown] = useState(null);
-  const dropdownAnchorRef = useRef(null);
-  const anchorRefs = useRef({});
 
   const filtered = useMemo(() => {
     return transactions
@@ -171,11 +93,6 @@ export default function Pesanan({ transactions, setTransactions }) {
 
   const handleStatusChange = (id, newStatus) => {
     setTransactions((prev) => prev.map((t) => t.id === id ? { ...t, status: newStatus } : t));
-    setStatusDropdown(null);
-  };
-
-  const toggleDropdown = (txId) => {
-    setStatusDropdown(statusDropdown === txId ? null : txId);
   };
 
   return (
@@ -291,14 +208,11 @@ export default function Pesanan({ transactions, setTransactions }) {
                     <td style={{ padding: '12px 16px', color: 'var(--text)', whiteSpace: 'nowrap', fontWeight: 500 }}>
                       {t.totalBerat} kg
                     </td>
-                    <td style={{ padding: '12px 16px', color: 'var(--text)', whiteSpace: 'nowrap', fontWeight: 700 }}>
-                      {formatRupiah(t.totalBayar)}
-                    </td>
                     <td style={{ padding: '12px 16px' }}>
                       <StatusBadge status={t.status} />
                     </td>
                     <td style={{ padding: '12px 16px' }}>
-                      <div style={{ display: 'flex', gap: 6 }}>
+                      <div style={{ display: 'flex', gap: 6, position: 'relative' }}>
                         {/* Detail Button */}
                         <button
                           onClick={() => setDetailTx(t)}
@@ -315,39 +229,23 @@ export default function Pesanan({ transactions, setTransactions }) {
                           <Eye size={14} />
                         </button>
 
-                        {/* Status Dropdown Trigger */}
-                        <button
-                          ref={(el) => { anchorRefs.current[t.id] = el; }}
-                          onClick={() => toggleDropdown(t.id)}
+                        {/* Status selector (inline select) */}
+                        <select
+                          value={t.status}
+                          onChange={(e) => handleStatusChange(t.id, e.target.value)}
                           style={{
-                            width: 30, height: 30, borderRadius: 8, border: '1.5px solid transparent',
-                            background: statusDropdown === t.id ? 'var(--green-bg)' : 'transparent',
-                            cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            color: 'var(--green)',
-                            transition: 'background 0.1s',
+                            height: 30, padding: '0 24px 0 8px',
+                            borderRadius: 8, border: '1px solid var(--border)',
+                            background: 'var(--surface)', color: 'var(--text)',
+                            fontSize: 12, cursor: 'pointer',
+                            appearance: 'none',
+                            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%236c757d' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
+                            backgroundRepeat: 'no-repeat', backgroundPosition: 'right 6px center',
                           }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = 'var(--green-bg)'}
-                          onMouseLeave={(e) => { if (statusDropdown !== t.id) e.currentTarget.style.background = 'transparent'; }}
                           title="Ubah Status"
                         >
-                          <ChevronDown size={14} />
-                        </button>
-
-                        <button
-                          onClick={() => window.open(`#/struk/${t.id}`, '_blank')}
-                          style={{
-                            width: 30, height: 30, borderRadius: 8, border: '1.5px solid transparent',
-                            background: 'transparent', cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            color: 'var(--text-3)',
-                          }}
-                          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--surface-2)'; e.currentTarget.style.color = 'var(--text)'; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-3)'; }}
-                          title="Cetak Struk"
-                        >
-                          <Printer size={14} />
-                        </button>
+                          {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+                        </select>
 
                         {/* Delete Button */}
                         <button
@@ -385,17 +283,6 @@ export default function Pesanan({ transactions, setTransactions }) {
         </div>
       </div>
 
-      {/* Status Dropdown Portal */}
-      {statusDropdown && anchorRefs.current[statusDropdown] && (
-        <StatusDropdownPortal
-          anchorRef={{ current: anchorRefs.current[statusDropdown] }}
-          txId={statusDropdown}
-          currentStatus={filtered.find(t => t.id === statusDropdown)?.status}
-          onStatusChange={handleStatusChange}
-          onClose={() => setStatusDropdown(null)}
-        />
-      )}
-
       {/* Detail Modal */}
       <Modal isOpen={!!detailTx} onClose={() => setDetailTx(null)} title={`Detail Pesanan — ${detailTx?.id}`} maxWidth="480px">
         {detailTx && (
@@ -410,10 +297,12 @@ export default function Pesanan({ transactions, setTransactions }) {
                 <span style={{ fontSize: 13, color: 'var(--text-2)' }}>Pelanggan</span>
                 <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{detailTx.pelanggan?.nama || '-'}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: 13, color: 'var(--text-2)' }}>No. HP</span>
-                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{detailTx.pelanggan?.noHp || 'Tidak ada'}</span>
-              </div>
+              {detailTx.pelanggan?.noHp && (
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: 13, color: 'var(--text-2)' }}>No. HP</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{detailTx.pelanggan.noHp}</span>
+                </div>
+              )}
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ fontSize: 13, color: 'var(--text-2)' }}>Tanggal</span>
                 <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{formatDateTime(detailTx.tanggal)}</span>

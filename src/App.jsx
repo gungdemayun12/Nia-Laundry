@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { HashRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { DEFAULT_SERVICES, DEFAULT_SETTINGS } from './utils/constants';
@@ -14,9 +14,9 @@ import DataPelanggan from './pages/DataPelanggan';
 import Layanan from './pages/Layanan';
 import Pengaturan from './pages/Pengaturan';
 import Laporan from './pages/Laporan';
-import TutupKasir from './pages/TutupKasir';
 import ReceiptPage from './pages/ReceiptPage';
-import Login from './pages/Login';
+import LoginPage from './pages/LoginPage';
+import TutupKasir from './pages/TutupKasir';
 
 function RouteTracker() {
   const location = useLocation();
@@ -25,7 +25,7 @@ function RouteTracker() {
   useEffect(() => {
     const saved = window.localStorage.getItem('pos_last_route');
     const isInitialLoad = !window.sessionStorage.getItem('pos_app_loaded');
-    
+
     if (isInitialLoad) {
       window.sessionStorage.setItem('pos_app_loaded', 'true');
       if (saved && saved !== '/' && location.pathname === '/') {
@@ -33,7 +33,7 @@ function RouteTracker() {
         return;
       }
     }
-    
+
     if (location.pathname) {
       window.localStorage.setItem('pos_last_route', location.pathname);
     }
@@ -47,9 +47,24 @@ export default function App() {
   const [customers, setCustomers] = useLocalStorage('pos_customers', []);
   const [services, setServices] = useLocalStorage('pos_services', DEFAULT_SERVICES);
   const [settings, setSettings] = useLocalStorage('pos_settings', DEFAULT_SETTINGS);
-  const [dailyClosings, setDailyClosings] = useLocalStorage('pos_daily_closings', []);
   const [darkMode, setDarkMode] = useLocalStorage('pos_dark_mode', false);
-  const [isAuthenticated, setIsAuthenticated] = useLocalStorage('pos_is_auth', false);
+  const [dailyClosings, setDailyClosings] = useLocalStorage('pos_daily_closings', []);
+
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return localStorage.getItem('pos_auth_logged_in') === 'true';
+  });
+
+  const authUsername = localStorage.getItem('pos_auth_username');
+
+  const handleLogin = () => {
+    setIsAuthenticated(true);
+    localStorage.setItem('pos_auth_logged_in', 'true');
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    localStorage.removeItem('pos_auth_logged_in');
+  };
 
   // Apply dark mode
   useEffect(() => {
@@ -62,8 +77,7 @@ export default function App() {
       try {
         const timestamp = new Date().toISOString();
         window.localStorage.setItem('pos_last_active', timestamp);
-        // Re-read and re-write all data to ensure localStorage stays fresh
-        const keys = ['pos_transactions', 'pos_customers', 'pos_services', 'pos_settings'];
+        const keys = ['pos_transactions', 'pos_customers', 'pos_services', 'pos_settings', 'pos_daily_closings'];
         keys.forEach((key) => {
           const data = window.localStorage.getItem(key);
           if (data) {
@@ -73,18 +87,17 @@ export default function App() {
       } catch (e) {
         console.warn('Keep-alive localStorage touch failed:', e);
       }
-    }, 5 * 60 * 1000); // Every 5 minutes
+    }, 5 * 60 * 1000);
 
     return () => clearInterval(keepAlive);
   }, []);
 
   // ── Prevent accidental page close / refresh losing state ──
   useEffect(() => {
-    const handleBeforeUnload = (e) => {
-      // Touch localStorage one more time on close
+    const handleBeforeUnload = () => {
       try {
         window.localStorage.setItem('pos_last_active', new Date().toISOString());
-      } catch (err) {
+      } catch {
         // ignore
       }
     };
@@ -143,14 +156,15 @@ export default function App() {
     e.target.value = '';
   };
 
-  if (!isAuthenticated) {
-    return <Login onLogin={() => setIsAuthenticated(true)} />;
+  // ── Auth check (after all hooks) ──
+  if (authUsername && !isAuthenticated) {
+    return <LoginPage onLogin={handleLogin} />;
   }
 
   return (
     <HashRouter>
       <RouteTracker />
-      <Layout darkMode={darkMode} setDarkMode={setDarkMode} onLogout={() => setIsAuthenticated(false)}>
+      <Layout darkMode={darkMode} setDarkMode={setDarkMode} onLogout={handleLogout}>
         <Routes>
           <Route
             path="/"
