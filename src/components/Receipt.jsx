@@ -71,12 +71,12 @@ const Receipt = forwardRef(function Receipt({ transaction, settings, id }, ref) 
           <span>Admin</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span>Plgn:</span>
+          <span>Pelanggan:</span>
           <span style={{ fontWeight: 'bold' }}>{transaction.pelanggan?.nama || '-'}</span>
         </div>
         {transaction.pelanggan?.noHp && (
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
-            <span>HP:</span>
+            <span>No. HP:</span>
             <span>{transaction.pelanggan.noHp}</span>
           </div>
         )}

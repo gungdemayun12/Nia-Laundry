@@ -64,6 +64,10 @@ export default function App() {
   const handleLogout = () => {
     setIsAuthenticated(false);
     localStorage.removeItem('pos_auth_logged_in');
+    localStorage.removeItem('pos_last_route');
+    if (window.location.hash && window.location.hash !== '#/') {
+      window.location.hash = '#/';
+    }
   };
 
   // Apply dark mode

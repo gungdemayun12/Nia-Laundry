@@ -5,6 +5,7 @@ import {
   Users, Settings, BarChart3, Menu, X, Moon, Sun, Clock, Tag, Archive, LogOut, Calculator
 } from 'lucide-react';
 import LogoImage from '../assets/nia_laundry.png';
+import Swal from 'sweetalert2';
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -163,7 +164,25 @@ export default function Layout({ children, darkMode, setDarkMode, onLogout }) {
           </button>
           {onLogout && (
             <button
-              onClick={onLogout}
+              onClick={() => {
+                Swal.fire({
+                  title: 'Keluar Aplikasi?',
+                  text: 'Anda akan keluar dari halaman POS Laundry.',
+                  icon: 'warning',
+                  showCancelButton: true,
+                  confirmButtonColor: 'var(--red)',
+                  cancelButtonColor: 'var(--border-2)',
+                  confirmButtonText: 'Ya, Keluar',
+                  cancelButtonText: 'Batal',
+                  showCloseButton: true,
+                  background: 'var(--surface)',
+                  color: 'var(--text)',
+                }).then((result) => {
+                  if (result.isConfirmed) {
+                    onLogout();
+                  }
+                });
+              }}
               style={{
                 display: 'flex', alignItems: 'center', gap: 10, width: '100%',
                 padding: '10px 14px', borderRadius: 10, background: 'var(--red-bg)', border: '1px solid var(--red-border)',

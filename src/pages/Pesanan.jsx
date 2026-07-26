@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Search, Trash2, Eye } from 'lucide-react';
+import { Search, Trash2, Eye, Printer } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { StatusBadge } from '../components/UI';
 import Modal from '../components/Modal';
@@ -227,6 +227,26 @@ export default function Pesanan({ transactions, setTransactions }) {
                           title="Lihat Detail"
                         >
                           <Eye size={14} />
+                        </button>
+
+                        {/* Receipt Button */}
+                        <button
+                          onClick={() => {
+                            localStorage.setItem('pos_receipt_current', JSON.stringify(t));
+                            const hash = `#/struk/${t.id}`;
+                            window.open(hash, '_blank');
+                          }}
+                          style={{
+                            width: 30, height: 30, borderRadius: 8, border: '1.5px solid transparent',
+                            background: 'transparent', cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            color: 'var(--text-3)',
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--surface-2)'; e.currentTarget.style.color = 'var(--text)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-3)'; }}
+                          title="Lihat Struk"
+                        >
+                          <Printer size={14} />
                         </button>
 
                         {/* Status selector (inline select) */}
