@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Save, Store, Database, AlertTriangle, Trash2, Lock, Bluetooth, BluetoothSearching, BluetoothConnected, BluetoothOff, Printer, RefreshCw, Unplug, Loader2 } from 'lucide-react';
+import { Save, Store, Database, AlertTriangle, Trash2, Lock, Bluetooth, BluetoothSearching, BluetoothConnected, BluetoothOff, Printer, RefreshCw, Unplug, Loader2, Smartphone, Wifi, CheckCircle } from 'lucide-react';
 import { Input } from '../components/UI';
 import { useBluetoothPrinter } from '../hooks/useBluetoothPrinter';
 import bluetoothPrinter, { buildReceiptBytes } from '../utils/bluetoothPrinter';
+import { isIOS, isSafari, getIOSPrintGuide, airPrintReceipt } from '../utils/iosPrintFallback';
 import Swal from 'sweetalert2';
 
 function Section({ icon: Icon, iconBg = 'var(--accent-bg)', title, description, action, children }) {
@@ -177,20 +178,155 @@ function BluetoothPrinterSection() {
   };
 
   if (!isSupported) {
+    const onIOS = isIOS();
+    const onSafari = isSafari();
+    const iosGuide = getIOSPrintGuide();
     return (
-      <div style={{
-        padding: '16px 20px', borderRadius: 12,
-        background: 'var(--amber-bg)', border: '1.5px solid var(--amber-border)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-          <BluetoothOff size={18} style={{ color: 'var(--amber)' }} />
-          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--amber)' }}>
-            Bluetooth Tidak Didukung
-          </span>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* iOS-specific big banner */}
+        {onIOS && (
+          <div style={{
+            padding: '18px 20px', borderRadius: 14,
+            background: 'var(--amber-bg)', border: '1.5px solid var(--amber-border)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+              <div style={{
+                width: 40, height: 40, borderRadius: 10, flexShrink: 0,
+                background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                border: '1.5px solid var(--amber-border)',
+              }}>
+                <Smartphone size={18} style={{ color: 'var(--amber)' }} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontSize: 14, fontWeight: 800, color: 'var(--amber)', marginBottom: 6 }}>
+                  ⚠️ iPhone / iPad Terdeteksi
+                </p>
+                <p style={{ fontSize: 12, color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 10 }}>
+                  <strong>Apple memblokir Web Bluetooth</strong> di SEMUA browser iOS (Chrome, Firefox, dll)
+                  karena aturan App Store. Chrome di iPhone = mesin Safari di bawahnya.
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {iosGuide.map((g, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                      <div style={{
+                        width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+                        background: 'var(--accent-bg)', border: '1.5px solid var(--accent-border)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 11, fontWeight: 800, color: 'var(--text)',
+                      }}>{i + 1}</div>
+                      <div>
+                        <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>{g.step}</p>
+                        <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1, lineHeight: 1.5 }}>{g.detail}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {!onSafari && (
+                  <div style={{
+                    marginTop: 14, padding: '10px 14px', borderRadius: 10,
+                    background: 'var(--surface)', border: '1px dashed var(--border-2)',
+                  }}>
+                    <p style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 4 }}>
+                      💡 Anda sedang menggunakan <strong>Chrome</strong>. Tutup & buka di app <strong>Safari</strong> untuk fitur lebih lengkap:
+                    </p>
+                    <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 99, background: 'var(--accent-bg)', border: '1px solid var(--accent-border)', color: 'var(--text-2)', fontWeight: 600 }}>
+                        Safari {onSafari ? '✓' : ''}
+                      </span>
+                      <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 99, background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text-3)', fontWeight: 600 }}>
+                        Tambahkan ke Layar Utama
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Non-iOS fallback message */}
+        {!onIOS && (
+          <div style={{
+            padding: '16px 20px', borderRadius: 12,
+            background: 'var(--amber-bg)', border: '1.5px solid var(--amber-border)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+              <BluetoothOff size={18} style={{ color: 'var(--amber)' }} />
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--amber)' }}>
+                Bluetooth Tidak Didukung
+              </span>
+            </div>
+            <p style={{ fontSize: 12, color: 'var(--text-2)', lineHeight: 1.6 }}>
+              Browser ini tidak mendukung Web Bluetooth API. Gunakan <strong>Google Chrome</strong> atau <strong>Microsoft Edge</strong> versi terbaru untuk menggunakan fitur cetak Bluetooth langsung.
+            </p>
+          </div>
+        )}
+
+        {/* AirPrint fallback — works on all platforms including iOS */}
+        <div style={{
+          padding: '18px 20px', borderRadius: 14,
+          background: 'var(--green-bg)', border: '1.5px solid var(--green-border)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+            <div style={{
+              width: 34, height: 34, borderRadius: 10,
+              background: '#ffffff', border: '1.5px solid var(--green-border)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Wifi size={16} style={{ color: 'var(--green)' }} />
+            </div>
+            <div>
+              <p style={{ fontSize: 13, fontWeight: 800, color: 'var(--green)' }}>
+                ✓ Opsi 2: Cetak via AirPrint / WiFi (Paling Mudah!)
+              </p>
+              <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>
+                Berlaku untuk SEMUA HP: iPhone, Android, Laptop. Printer & HP satu jaringan WiFi yang sama.
+              </p>
+            </div>
+          </div>
+          <ol style={{ fontSize: 12, color: 'var(--text-2)', lineHeight: 1.7, paddingLeft: 18, marginBottom: 12 }}>
+            <li>Pada halaman Transaksi, tap tombol <strong>"Cetak Struk"</strong></li>
+            <li>App akan buka halaman struk otomatis</li>
+            <li>Pilih printer dari menu <strong>AirPrint</strong> / WiFi printer</li>
+            <li>Tap Cetak → selesai ✅</li>
+          </ol>
+          <button
+            className="btn btn-success"
+            onClick={() => {
+              const testTx = {
+                id: 'TEST-AIRPRINT-001',
+                tanggal: new Date().toISOString(),
+                pelanggan: { nama: 'Test Pelanggan', noHp: '08123456789' },
+                items: [{ layanan: 'Cuci Kering', berat: 3, hargaPerKg: 7000, subtotal: 21000 }],
+                totalBerat: 3,
+                totalBayar: 21000,
+                diskon: 0,
+                status: 'Proses',
+                estimasiSelesai: new Date(Date.now() + 2 * 86400000).toISOString().split('T')[0],
+                catatan: 'Ini adalah test cetak AirPrint',
+              };
+              const currentSettings = JSON.parse(localStorage.getItem('pos_settings') || '{}');
+              const ok = airPrintReceipt(testTx, currentSettings);
+              if (ok) {
+                Swal.fire({
+                  icon: 'success',
+                  title: 'Dialog Cetak Dibuka',
+                  text: 'Pilih printer dari menu AirPrint yang muncul, lalu tap Cetak.',
+                  timer: 3000,
+                  showConfirmButton: false,
+                  toast: true,
+                  position: 'top-end',
+                  background: 'var(--surface)',
+                  color: 'var(--text)',
+                });
+              }
+            }}
+            style={{ padding: '10px 18px' }}
+          >
+            <Printer size={14} />
+            Test Cetak via AirPrint / WiFi
+          </button>
         </div>
-        <p style={{ fontSize: 12, color: 'var(--text-2)', lineHeight: 1.6 }}>
-          Browser ini tidak mendukung Web Bluetooth API. Gunakan <strong>Google Chrome</strong> atau <strong>Microsoft Edge</strong> versi terbaru untuk menggunakan fitur ini.
-        </p>
       </div>
     );
   }

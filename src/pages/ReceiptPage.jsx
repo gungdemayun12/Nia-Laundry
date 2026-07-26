@@ -1,13 +1,36 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Printer, Download, ArrowLeft, Bluetooth, BluetoothConnected, Loader2 } from 'lucide-react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { Printer, Download, ArrowLeft, Bluetooth, BluetoothConnected, Loader2, Smartphone, Wifi } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import Swal from 'sweetalert2';
 import Receipt from '../components/Receipt';
 import bluetoothPrinter, { buildReceiptBytes } from '../utils/bluetoothPrinter';
+import { isIOS, airPrintReceipt, triggerNativePrint } from '../utils/iosPrintFallback';
 
 function getReceiptData(id) {
   try {
+    const params = new URLSearchParams(window.location.hash.split('?')[1] || '');
+    const txParam = params.get('tx');
+    const setParam = params.get('s');
+    const autoPrint = params.get('print');
+    if (txParam) {
+      try {
+        const tx = JSON.parse(decodeURIComponent(txParam));
+        if (tx?.id) {
+          if (setParam) {
+            try {
+              const s = JSON.parse(decodeURIComponent(setParam));
+              localStorage.setItem('pos_settings_tmp', JSON.stringify(s));
+            } catch {}
+          }
+          localStorage.setItem('pos_receipt_current', JSON.stringify(tx));
+          if (autoPrint) {
+            localStorage.setItem('pos_receipt_autoprint', '1');
+          }
+          return tx;
+        }
+      } catch {}
+    }
     const txData = localStorage.getItem('pos_receipt_current');
     if (txData) {
       const parsed = JSON.parse(txData);
@@ -24,19 +47,26 @@ function getReceiptData(id) {
 export default function ReceiptPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [transaction] = useState(() => getReceiptData(id));
   const [settings, setSettings] = useState(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isBtPrinting, setIsBtPrinting] = useState(false);
   const [btConnected, setBtConnected] = useState(() => bluetoothPrinter.isConnected);
+  const [onIOS] = useState(() => isIOS());
   const receiptRef = useRef(null);
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     try {
-      const settingsData = localStorage.getItem('pos_settings');
-      if (settingsData) {
-        setSettings(JSON.parse(settingsData));
+      const tmpSet = localStorage.getItem('pos_settings_tmp');
+      if (tmpSet) {
+        setSettings(JSON.parse(tmpSet));
+      } else {
+        const settingsData = localStorage.getItem('pos_settings');
+        if (settingsData) {
+          setSettings(JSON.parse(settingsData));
+        }
       }
     } catch (e) {
       console.error('Failed to load settings:', e);
@@ -51,9 +81,23 @@ export default function ReceiptPage() {
     return unsub;
   }, []);
 
-  // Auto-print via Bluetooth if connected (on first mount)
+  // Auto-print: via BT if connected, else native print (AirPrint on iOS)
   useEffect(() => {
-    if (bluetoothPrinter.isConnected && transaction && settings) {
+    if (!transaction || !settings) return;
+    const shouldAutoPrint = localStorage.getItem('pos_receipt_autoprint') === '1';
+    const params = new URLSearchParams(window.location.hash.split('?')[1] || '');
+    const printParam = params.get('print');
+
+    if (shouldAutoPrint || printParam === '1') {
+      localStorage.removeItem('pos_receipt_autoprint');
+      setTimeout(() => {
+        if (btConnected && !onIOS) {
+          handleBluetoothPrint();
+        } else {
+          triggerNativePrint();
+        }
+      }, 600);
+    } else if (bluetoothPrinter.isConnected && !onIOS) {
       handleBluetoothPrint();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -79,24 +123,31 @@ export default function ReceiptPage() {
     } catch (err) {
       Swal.fire({
         icon: 'error',
-        title: 'Gagal Cetak',
-        text: err.message + ' Menggunakan cetak biasa sebagai fallback.',
+        title: 'Gagal Cetak BT',
+        text: err.message + '\n\nMenggunakan cetak AirPrint / WiFi sebagai ganti.',
         showCloseButton: true,
         background: 'var(--surface)',
         color: 'var(--text)',
       });
-      // Fallback to window.print
-      window.print();
+      setTimeout(() => triggerNativePrint(), 400);
     } finally {
       setIsBtPrinting(false);
     }
   };
 
   const handlePrint = () => {
-    if (btConnected) {
+    if (btConnected && !onIOS) {
       handleBluetoothPrint();
     } else {
-      window.print();
+      triggerNativePrint();
+    }
+  };
+
+  const handleAirPrintPopup = () => {
+    if (!transaction || !settings) return;
+    const ok = airPrintReceipt(transaction, settings);
+    if (!ok) {
+      triggerNativePrint();
     }
   };
 
@@ -163,6 +214,35 @@ export default function ReceiptPage() {
       background: 'var(--bg)',
       padding: '24px',
     }}>
+      {/* iOS notice banner */}
+      {onIOS && (
+        <div style={{
+          maxWidth: 600, margin: '0 auto 18px',
+          padding: '14px 18px', borderRadius: 14,
+          background: 'var(--amber-bg)', border: '1.5px solid var(--amber-border)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+            <div style={{
+              width: 32, height: 32, borderRadius: 10, flexShrink: 0,
+              background: '#fff', border: '1.5px solid var(--amber-border)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Smartphone size={15} style={{ color: 'var(--amber)' }} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: 12, fontWeight: 800, color: 'var(--amber)', marginBottom: 3 }}>
+                📱 Pengguna iPhone: Gunakan AirPrint
+              </p>
+              <p style={{ fontSize: 11, color: 'var(--text-2)', lineHeight: 1.5 }}>
+                Apple memblokir Bluetooth langsung di browser. Tap tombol
+                <strong style={{ color: 'var(--text)' }}> "Cetak via AirPrint" </strong>
+                di bawah → pilih printer WiFi Anda.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Top Actions */}
       <div style={{ 
         maxWidth: 600, 
@@ -171,6 +251,7 @@ export default function ReceiptPage() {
         gap: 10,
         justifyContent: 'space-between',
         alignItems: 'center',
+        flexWrap: 'wrap',
       }}>
         <button className="btn btn-secondary" onClick={() => {
           if (window.history.length <= 2) {
@@ -182,8 +263,7 @@ export default function ReceiptPage() {
         }}>
           <ArrowLeft size={16} /> Tutup / Kembali
         </button>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          {/* Bluetooth status indicator */}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           {btConnected && (
             <div style={{
               display: 'inline-flex', alignItems: 'center', gap: 5,
@@ -201,8 +281,17 @@ export default function ReceiptPage() {
             disabled={isDownloading}
             style={{ padding: '9px 16px' }}
           >
-            <Download size={16} /> {isDownloading ? 'Mengunduh...' : 'Download PNG'}
+            <Download size={16} /> {isDownloading ? 'Mengunduh...' : 'PNG'}
           </button>
+          {onIOS && (
+            <button
+              className="btn btn-success"
+              onClick={handleAirPrintPopup}
+              style={{ padding: '9px 16px' }}
+            >
+              <Wifi size={16} /> AirPrint
+            </button>
+          )}
           <button 
             className="btn btn-primary" 
             onClick={handlePrint}
@@ -214,7 +303,7 @@ export default function ReceiptPage() {
                 <Loader2 size={16} className="animate-spin-slow" />
                 Mencetak...
               </>
-            ) : btConnected ? (
+            ) : btConnected && !onIOS ? (
               <>
                 <Bluetooth size={16} /> Cetak via BT
               </>

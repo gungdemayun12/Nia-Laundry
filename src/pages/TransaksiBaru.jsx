@@ -162,6 +162,10 @@ export default function TransaksiBaru({
           color: 'var(--text)',
         }).then((res) => {
           if (res.isConfirmed) {
+            try {
+              localStorage.setItem('pos_receipt_current', JSON.stringify(tx));
+              localStorage.setItem('pos_receipt_autoprint', '1');
+            } catch {}
             navigate(`/struk/${tx.id}`);
           }
         });
