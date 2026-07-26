@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, PlusCircle, ClipboardList,
-  Users, Settings, BarChart3, Menu, X, Moon, Sun, Clock, Tag, Archive, LogOut
+  Users, Settings, BarChart3, Menu, X, Moon, Sun, Clock, Tag, Archive, LogOut, Calculator
 } from 'lucide-react';
 import LogoImage from '../assets/nia_laundry.png';
 

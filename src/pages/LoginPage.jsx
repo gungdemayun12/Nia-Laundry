@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Lock, User } from 'lucide-react';
 import Swal from 'sweetalert2';
 
-export default function LoginPage() {
+export default function LoginPage({ onLogin }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -28,6 +28,7 @@ export default function LoginPage() {
 
     if (username === savedUsername && password === savedPassword) {
       localStorage.setItem('pos_auth_logged_in', 'true');
+      if (onLogin) onLogin();
       navigate('/');
     } else {
       setError('Username atau password salah');
