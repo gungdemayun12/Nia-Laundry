@@ -26,31 +26,29 @@ const GS = 0x1D;
 const LF = 0x0A;
 
 const CMD = {
-  INIT: [ESC, 0x40],                         // Initialize printer
-  ALIGN_CENTER: [ESC, 0x61, 0x01],           // Center alignment
-  ALIGN_LEFT: [ESC, 0x61, 0x00],             // Left alignment
-  ALIGN_RIGHT: [ESC, 0x61, 0x02],            // Right alignment
-  BOLD_ON: [ESC, 0x45, 0x01],                // Bold on
-  BOLD_OFF: [ESC, 0x45, 0x00],               // Bold off
-  DOUBLE_HEIGHT_ON: [ESC, 0x21, 0x10],       // Double height
-  DOUBLE_WIDTH_ON: [ESC, 0x21, 0x20],        // Double width
-  DOUBLE_ON: [ESC, 0x21, 0x30],              // Double height + width
-  NORMAL_SIZE: [ESC, 0x21, 0x00],            // Normal text
-  UNDERLINE_ON: [ESC, 0x2D, 0x01],           // Underline on
-  UNDERLINE_OFF: [ESC, 0x2D, 0x00],          // Underline off
-  CUT_PAPER: [GS, 0x56, 0x00],              // Full cut
-  PARTIAL_CUT: [GS, 0x56, 0x01],            // Partial cut
-  FEED_LINES: (n) => [ESC, 0x64, n],         // Feed n lines
-  LINE_SPACING: (n) => [ESC, 0x33, n],       // Set line spacing
+  INIT: [ESC, 0x40],
+  ALIGN_CENTER: [ESC, 0x61, 0x01],
+  ALIGN_LEFT: [ESC, 0x61, 0x00],
+  ALIGN_RIGHT: [ESC, 0x61, 0x02],
+  BOLD_ON: [ESC, 0x45, 0x01],
+  BOLD_OFF: [ESC, 0x45, 0x00],
+  DOUBLE_HEIGHT_ON: [ESC, 0x21, 0x10],
+  DOUBLE_WIDTH_ON: [ESC, 0x21, 0x20],
+  DOUBLE_ON: [ESC, 0x21, 0x30],
+  NORMAL_SIZE: [ESC, 0x21, 0x00],
+  UNDERLINE_ON: [ESC, 0x2D, 0x01],
+  UNDERLINE_OFF: [ESC, 0x2D, 0x00],
+  CUT_PAPER: [GS, 0x56, 0x00],
+  PARTIAL_CUT: [GS, 0x56, 0x01],
+  FEED_LINES: (n) => [ESC, 0x64, n],
+  LINE_SPACING: (n) => [ESC, 0x33, n],
 };
 
-// ── Text Encoding ──
 function textToBytes(text) {
   const encoder = new TextEncoder();
   return encoder.encode(text);
 }
 
-// ── Format helpers ──
 function formatRupiahPlain(number) {
   if (number == null || isNaN(number)) return 'Rp0';
   return 'Rp' + Number(number).toLocaleString('id-ID');
@@ -73,12 +71,6 @@ function formatDatePlain(dateString) {
   });
 }
 
-/**
- * Pad/align text for thermal printer columns
- * @param {string} left - Left text
- * @param {string} right - Right text
- * @param {number} width - Total character width (32 for 58mm, 48 for 80mm)
- */
 function twoColumn(left, right, width = 32) {
   const maxLeft = width - right.length - 1;
   const paddedLeft = left.length > maxLeft ? left.substring(0, maxLeft) : left;
@@ -96,10 +88,8 @@ function dashedLine(width = 32) {
   return '-'.repeat(width);
 }
 
-// ── Build ESC/POS receipt bytes ──
 export function buildReceiptBytes(transaction, settings) {
   if (!transaction) return new Uint8Array(0);
-
   const is58mm = settings?.lebarKertas !== '80mm';
   const W = is58mm ? 32 : 48;
   const bytes = [];
@@ -114,11 +104,9 @@ export function buildReceiptBytes(transaction, settings) {
     push(textToBytes(text), [LF]);
   };
 
-  // Initialize
   push(CMD.INIT);
   push(CMD.LINE_SPACING(60));
 
-  // ── Header ──
   push(CMD.ALIGN_CENTER);
   push(CMD.BOLD_ON);
   push(CMD.DOUBLE_ON);
@@ -126,17 +114,12 @@ export function buildReceiptBytes(transaction, settings) {
   push(CMD.NORMAL_SIZE);
   push(CMD.BOLD_OFF);
 
-  if (settings?.alamat) {
-    printLine(settings.alamat);
-  }
-  if (settings?.telp) {
-    printLine(settings.telp);
-  }
+  if (settings?.alamat) printLine(settings.alamat);
+  if (settings?.telp) printLine(settings.telp);
 
   push(CMD.ALIGN_LEFT);
   printLine(dashedLine(W));
 
-  // ── Invoice info ──
   printLine(twoColumn('Struk:', transaction.id, W));
   printLine(twoColumn('Tgl:', formatDateTimePlain(transaction.tanggal), W));
   printLine(twoColumn('Kasir:', 'Admin', W));
@@ -147,7 +130,6 @@ export function buildReceiptBytes(transaction, settings) {
 
   printLine(dashedLine(W));
 
-  // ── Items ──
   if (transaction.items && transaction.items.length > 0) {
     transaction.items.forEach((item) => {
       push(CMD.BOLD_ON);
@@ -161,7 +143,6 @@ export function buildReceiptBytes(transaction, settings) {
 
   printLine(dashedLine(W));
 
-  // ── Totals ──
   printLine(twoColumn('Berat Total:', `${transaction.totalBerat} kg`, W));
   printLine(twoColumn('Subtotal:', formatRupiahPlain(transaction.totalBayar + transaction.diskon), W));
 
@@ -179,7 +160,6 @@ export function buildReceiptBytes(transaction, settings) {
 
   printLine(dashedLine(W));
 
-  // ── Status & Estimation ──
   printLine(twoColumn('Status:', transaction.status, W));
   printLine(twoColumn('Selesai:', formatDatePlain(transaction.estimasiSelesai), W));
 
@@ -190,7 +170,6 @@ export function buildReceiptBytes(transaction, settings) {
 
   printLine(dashedLine(W));
 
-  // ── Footer ──
   push(CMD.ALIGN_CENTER);
   const footer = settings?.footerStruk || 'Terima Kasih!';
   footer.split('\n').forEach(line => printLine(line));
@@ -199,14 +178,12 @@ export function buildReceiptBytes(transaction, settings) {
   printLine('-- SIMPAN STRUK INI --');
   push(CMD.BOLD_OFF);
 
-  // Feed and cut
   push(CMD.FEED_LINES(4));
   push(CMD.PARTIAL_CUT);
 
   return new Uint8Array(bytes);
 }
 
-// ── Bluetooth Printer Class ──
 class BluetoothPrinterManager {
   constructor() {
     this.device = null;
@@ -217,10 +194,9 @@ class BluetoothPrinterManager {
     this.deviceId = '';
     this._listeners = new Set();
     this._autoReconnecting = false;
-    this._manualDisconnect = false;
+    this._reconnectCallbacks = [];
   }
 
-  // Subscribe to state changes
   subscribe(listener) {
     this._listeners.add(listener);
     return () => this._listeners.delete(listener);
@@ -244,7 +220,6 @@ class BluetoothPrinterManager {
     return !!navigator.bluetooth;
   }
 
-  // Load saved printer info
   getSavedPrinter() {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -254,7 +229,6 @@ class BluetoothPrinterManager {
     }
   }
 
-  // Save printer info
   _savePrinter() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
       name: this.deviceName,
@@ -263,7 +237,6 @@ class BluetoothPrinterManager {
     }));
   }
 
-  // Clear saved printer
   clearSavedPrinter() {
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem('pos_bt_printer_disconnected');
@@ -277,19 +250,17 @@ class BluetoothPrinterManager {
   }
 
   /**
-   * Coba auto-reconnect ke printer yang sudah pernah dipairing sebelumnya.
-   * Dipanggil saat aplikasi dimuat / refresh halaman.
+   * Auto reconnect menggunakan getDevices().
+   * Web Bluetooth API TIDAK BISA menjaga koneksi setelah refresh karena kebijakan browser.
+   * Tapi kita bisa reconnect otomatis jika device masih terdaftar di browser.
    * 
-   * Web Bluetooth API akan selalu memutus koneksi GATT saat halaman di-refresh.
-   * Tapi kita bisa reconnect otomatis tanpa scan ulang dengan:
-   * 1. getDevices() - mengambil daftar device yang sudah pernah dipairing
-   * 2. requestDevice() dengan filters - memunculkan dialog dengan device yang sudah dikenal
+   * Chrome di Windows/Linux biasanya menyimpan device yang sudah dipairing.
+   * getDevices() akan mengembalikan device tersebut.
    */
   async autoReconnect() {
     const saved = this.getSavedPrinter();
     if (!saved || !saved.name || this._autoReconnecting) return null;
 
-    // Jika manual disconnect, jangan auto reconnect
     if (localStorage.getItem('pos_bt_printer_disconnected') === 'true') {
       return null;
     }
@@ -297,11 +268,13 @@ class BluetoothPrinterManager {
     this._autoReconnecting = true;
 
     try {
-      // Method 1: Coba getDevices (Chrome remembers paired devices)
+      // Method: navigator.bluetooth.getDevices()
+      // Browser menyimpan daftar device yang sudah pernah dipairing oleh website ini.
+      // Setelah refresh, device masih ada di daftar ini (Chrome).
       if (navigator.bluetooth.getDevices) {
         const devices = await navigator.bluetooth.getDevices();
         
-        // Cari device yang cocok berdasarkan nama atau id
+        // Cari device yang cocok
         const matched = devices.find(d => 
           d.name === saved.name || d.id === saved.id
         );
@@ -311,7 +284,7 @@ class BluetoothPrinterManager {
           this.deviceName = matched.name || saved.name;
           this.deviceId = matched.id || saved.id;
 
-          // Pasang event listener disconnect baru
+          // Pasang event listener disconnect
           this.device.addEventListener('gattserverdisconnected', () => {
             this.isConnected = false;
             this.writeCharacteristic = null;
@@ -319,14 +292,30 @@ class BluetoothPrinterManager {
             this._notify();
           });
 
+          // Coba connect GATT
+          // KONEKSI INI AKAN BERHASIL jika browser mengizinkan reconnect
+          // Chrome biasanya mengizinkan reconnect ke device yang sudah dipairing
+          // TANPA perlu user gesture lagi (karena pairing sudah di-approve sebelumnya)
           await this._connectGATT();
+          
+          // Beri tahu semua callback bahwa reconnect berhasil
+          this._reconnectCallbacks.forEach(cb => cb(true));
+          this._reconnectCallbacks = [];
+          
           return this.getState();
         }
       }
 
+      // Device tidak ditemukan di daftar browser
+      // Kita akan trigger callback reconnect gagal
+      this._reconnectCallbacks.forEach(cb => cb(false));
+      this._reconnectCallbacks = [];
+      
       return null;
     } catch (err) {
       console.warn('Auto-reconnect gagal:', err.message);
+      this._reconnectCallbacks.forEach(cb => cb(false));
+      this._reconnectCallbacks = [];
       return null;
     } finally {
       this._autoReconnecting = false;
@@ -334,10 +323,21 @@ class BluetoothPrinterManager {
   }
 
   /**
-   * Coba reconnect dengan requestDevice (memunculkan dialog Bluetooth)
-   * Tapi dialog akan otomatis menampilkan device yang sudah dipairing sebelumnya.
-   * User tinggal klik nama printer yang sama -> langsung connect.
-   * Ini lebih cepat daripada scan ulang dari awal.
+   * Daftarkan callback yang akan dipanggil saat autoReconnect selesai
+   */
+  onReconnectResult(callback) {
+    this._reconnectCallbacks.push(callback);
+  }
+
+  /**
+   * Reconnect cepat tanpa scan - langsung panggil dialog Bluetooth
+   * dengan filter nama device yang sudah dikenal.
+   * 
+   * KARENA Chrome sudah pairing sebelumnya, dialog akan langsung
+   * muncul dengan device yang dikenal. User tinggal klik nama printer
+   * yang sama -> LANGSUNG CONNECT.
+   * 
+   * Ini lebih cepat daripada scan dari awal yang mencari semua device BLE.
    */
   async quickReconnect() {
     const saved = this.getSavedPrinter();
@@ -346,7 +346,8 @@ class BluetoothPrinterManager {
     }
 
     try {
-      // Request device dengan filter nama yang sudah dikenal
+      // Gunakan filter nama device yang sudah dikenal
+      // Chrome akan menampilkan device ini di dialog tanpa perlu scan ulang
       this.device = await navigator.bluetooth.requestDevice({
         filters: [{ name: saved.name }],
         optionalServices: PRINTER_SERVICE_UUIDS,
@@ -359,10 +360,8 @@ class BluetoothPrinterManager {
       this.deviceName = this.device.name || saved.name;
       this.deviceId = this.device.id;
 
-      // Hapus flag manual disconnect
       localStorage.removeItem('pos_bt_printer_disconnected');
 
-      // Pasang event listener disconnect
       this.device.addEventListener('gattserverdisconnected', () => {
         this.isConnected = false;
         this.writeCharacteristic = null;
@@ -374,22 +373,18 @@ class BluetoothPrinterManager {
       return this.getState();
     } catch (err) {
       if (err.name === 'NotFoundError') {
-        throw new Error('Tidak ada perangkat yang dipilih. Silakan coba lagi.');
+        throw new Error('Tidak ada perangkat yang dipilih.');
       }
       throw err;
     }
   }
 
-  /**
-   * Scan for and connect to a Bluetooth printer
-   */
   async scanAndConnect() {
     if (!this.isSupported()) {
       throw new Error('Bluetooth tidak didukung di browser ini. Gunakan Chrome/Edge terbaru.');
     }
 
     try {
-      // Request device with broad filter for thermal printers
       this.device = await navigator.bluetooth.requestDevice({
         acceptAllDevices: true,
         optionalServices: PRINTER_SERVICE_UUIDS,
@@ -402,10 +397,8 @@ class BluetoothPrinterManager {
       this.deviceName = this.device.name || 'Printer Bluetooth';
       this.deviceId = this.device.id;
 
-      // Hapus flag manual disconnect
       localStorage.removeItem('pos_bt_printer_disconnected');
 
-      // Listen for disconnection - auto reconnect ketika device tiba-tiba putus
       this.device.addEventListener('gattserverdisconnected', () => {
         this.isConnected = false;
         this.writeCharacteristic = null;
@@ -413,9 +406,7 @@ class BluetoothPrinterManager {
         this._notify();
       });
 
-      // Connect to GATT server
       await this._connectGATT();
-
       return this.getState();
     } catch (err) {
       if (err.name === 'NotFoundError') {
@@ -425,26 +416,18 @@ class BluetoothPrinterManager {
     }
   }
 
-  /**
-   * Reconnect to a previously paired device
-   */
   async reconnect() {
     if (!this.device || !this.device.gatt) {
       throw new Error('Perangkat tidak tersedia. Silakan scan ulang.');
     }
-
     await this._connectGATT();
     return this.getState();
   }
 
-  /**
-   * Connect to GATT server and find write characteristic
-   */
   async _connectGATT() {
     try {
       this.server = await this.device.gatt.connect();
 
-      // Try each known service UUID
       let service = null;
       for (const uuid of PRINTER_SERVICE_UUIDS) {
         try {
@@ -455,26 +438,18 @@ class BluetoothPrinterManager {
         }
       }
 
-      // If no known service found, try to discover all services
       if (!service) {
         try {
           const services = await this.server.getPrimaryServices();
-          if (services.length > 0) {
-            service = services[0];
-          }
+          if (services.length > 0) service = services[0];
         } catch {
-          throw new Error('Tidak dapat menemukan service printer. Pastikan printer mendukung BLE.');
+          throw new Error('Tidak dapat menemukan service printer.');
         }
       }
 
-      if (!service) {
-        throw new Error('Service printer tidak ditemukan.');
-      }
+      if (!service) throw new Error('Service printer tidak ditemukan.');
 
-      // Find write characteristic
       this.writeCharacteristic = null;
-
-      // Try known characteristic UUIDs first
       for (const uuid of WRITE_CHARACTERISTIC_UUIDS) {
         try {
           this.writeCharacteristic = await service.getCharacteristic(uuid);
@@ -484,7 +459,6 @@ class BluetoothPrinterManager {
         }
       }
 
-      // If not found, discover all characteristics and find one that supports write
       if (!this.writeCharacteristic) {
         try {
           const characteristics = await service.getCharacteristics();
@@ -494,9 +468,7 @@ class BluetoothPrinterManager {
               break;
             }
           }
-        } catch {
-          // ignore
-        }
+        } catch { }
       }
 
       if (!this.writeCharacteristic) {
@@ -513,13 +485,8 @@ class BluetoothPrinterManager {
     }
   }
 
-  /**
-   * Disconnect from the printer
-   */
   disconnect() {
-    // Set flag bahwa ini disconnect manual (bukan karena refresh/hilang sinyal)
     localStorage.setItem('pos_bt_printer_disconnected', 'true');
-    
     if (this.device && this.device.gatt.connected) {
       this.device.gatt.disconnect();
     }
@@ -529,22 +496,16 @@ class BluetoothPrinterManager {
     this._notify();
   }
 
-  /**
-   * Send raw bytes to the printer in chunks (BLE has MTU limits)
-   */
   async sendBytes(data) {
     if (!this.writeCharacteristic) {
-      throw new Error('Printer tidak terhubung. Sambungkan printer terlebih dahulu.');
+      throw new Error('Printer tidak terhubung.');
     }
-
-    const CHUNK_SIZE = 100; // Safe BLE chunk size
+    const CHUNK_SIZE = 100;
     const totalChunks = Math.ceil(data.length / CHUNK_SIZE);
-
     for (let i = 0; i < totalChunks; i++) {
       const start = i * CHUNK_SIZE;
       const end = Math.min(start + CHUNK_SIZE, data.length);
       const chunk = data.slice(start, end);
-
       try {
         if (this.writeCharacteristic.properties.writeWithoutResponse) {
           await this.writeCharacteristic.writeValueWithoutResponse(chunk);
@@ -552,7 +513,6 @@ class BluetoothPrinterManager {
           await this.writeCharacteristic.writeValue(chunk);
         }
       } catch (err) {
-        // If write fails, try reconnecting once
         if (i === 0 && this.device) {
           try {
             await this._connectGATT();
@@ -563,41 +523,33 @@ class BluetoothPrinterManager {
             }
             continue;
           } catch {
-            throw new Error('Gagal mengirim data ke printer. Coba sambungkan ulang.');
+            throw new Error('Gagal mengirim data ke printer.');
           }
         }
         throw err;
       }
-
-      // Small delay between chunks
       if (i < totalChunks - 1) {
         await new Promise(r => setTimeout(r, 20));
       }
     }
   }
 
-  /**
-   * Print a receipt transaction
-   */
   async printReceipt(transaction, settings) {
     if (!this.isConnected || !this.writeCharacteristic) {
-      // Try to reconnect if device exists
       if (this.device) {
         try {
           await this.reconnect();
         } catch {
-          throw new Error('Printer tidak terhubung. Buka Pengaturan untuk menyambungkan printer.');
+          throw new Error('Printer tidak terhubung.');
         }
       } else {
-        throw new Error('Printer tidak terhubung. Buka Pengaturan untuk menyambungkan printer.');
+        throw new Error('Printer tidak terhubung.');
       }
     }
-
     const receiptBytes = buildReceiptBytes(transaction, settings);
     await this.sendBytes(receiptBytes);
   }
 }
 
-// Singleton instance
 const bluetoothPrinter = new BluetoothPrinterManager();
 export default bluetoothPrinter;
