@@ -113,7 +113,7 @@ export default function App() {
   // ── Session Timeout Logic ──
   useEffect(() => {
     let timeoutId;
-    const timeoutDuration = 30 * 60 * 1000; // 30 menit
+    const timeoutDuration = 12 * 60 * 60 * 1000; // 12 jam
 
     const resetTimeout = () => {
       clearTimeout(timeoutId);
