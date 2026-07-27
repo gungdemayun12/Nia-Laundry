@@ -54,7 +54,7 @@ export default function App() {
     return localStorage.getItem('pos_auth_logged_in') === 'true';
   });
 
-  const authUsername = localStorage.getItem('pos_auth_username');
+
 
   const handleLogin = () => {
     setIsAuthenticated(true);
@@ -64,6 +64,7 @@ export default function App() {
   const handleLogout = () => {
     setIsAuthenticated(false);
     localStorage.removeItem('pos_auth_logged_in');
+    localStorage.removeItem('pos_auth_username'); // Tambahkan ini
     localStorage.removeItem('pos_last_route');
     if (window.location.hash && window.location.hash !== '#/') {
       window.location.hash = '#/';
@@ -108,6 +109,51 @@ export default function App() {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, []);
+
+  // ── Session Timeout Logic ──
+  useEffect(() => {
+    let timeoutId;
+    const timeoutDuration = 30 * 60 * 1000; // 30 menit
+
+    const resetTimeout = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(logoutUser, timeoutDuration);
+    };
+
+    const logoutUser = () => {
+      if (isAuthenticated) {
+        handleLogout();
+        Swal.fire({
+          icon: 'warning',
+          title: 'Sesi Berakhir',
+          text: 'Sesi Anda telah berakhir karena tidak ada aktivitas. Silakan login kembali.',
+          showConfirmButton: true,
+          background: 'var(--surface)',
+          color: 'var(--text)',
+        });
+      }
+    };
+
+    const handleActivity = () => {
+      resetTimeout();
+    };
+
+    // Tambahkan event listener untuk aktivitas pengguna
+    window.addEventListener('mousemove', handleActivity);
+    window.addEventListener('keypress', handleActivity);
+    window.addEventListener('scroll', handleActivity);
+    window.addEventListener('click', handleActivity);
+
+    resetTimeout(); // Set timeout awal saat komponen dimuat
+
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('mousemove', handleActivity);
+      window.removeEventListener('keypress', handleActivity);
+      window.removeEventListener('scroll', handleActivity);
+      window.removeEventListener('click', handleActivity);
+    };
+  }, [isAuthenticated, handleLogout]); // Dependensi: isAuthenticated dan handleLogout
 
   // ── Error recovery: catch unhandled errors ──
   useEffect(() => {
@@ -160,112 +206,111 @@ export default function App() {
     e.target.value = '';
   };
 
-  // ── Auth check (after all hooks) ──
-  if (authUsername && !isAuthenticated) {
-    return <LoginPage onLogin={handleLogin} />;
-  }
-
   return (
     <HashRouter>
       <RouteTracker />
-      <Layout darkMode={darkMode} setDarkMode={setDarkMode} onLogout={handleLogout}>
-        <Routes>
-          <Route
-            path="/"
-            element={
-              <Dashboard
-                transactions={transactions}
-                setTransactions={setTransactions}
-              />
-            }
-          />
-          <Route
-            path="/transaksi-baru"
-            element={
-              <TransaksiBaru
-                transactions={transactions}
-                setTransactions={setTransactions}
-                customers={customers}
-                setCustomers={setCustomers}
-                services={services}
-              />
-            }
-          />
-          <Route
-            path="/pesanan"
-            element={
-              <Pesanan
-                transactions={transactions}
-                setTransactions={setTransactions}
-                services={services}
-              />
-            }
-          />
-          <Route
-            path="/riwayat-pesanan"
-            element={
-              <RiwayatPesanan
-                transactions={transactions}
-                setTransactions={setTransactions}
-                services={services}
-              />
-            }
-          />
-          <Route
-            path="/pelanggan"
-            element={
-              <DataPelanggan
-                customers={customers}
-                transactions={transactions}
-              />
-            }
-          />
-          <Route
-            path="/layanan"
-            element={
-              <Layanan
-                services={services}
-                setServices={setServices}
-              />
-            }
-          />
-          <Route
-            path="/pengaturan"
-            element={
-              <Pengaturan
-                settings={settings}
-                setSettings={setSettings}
-                onBackup={handleBackup}
-                onRestore={handleRestore}
-                fileInputRef={fileInputRef}
-              />
-            }
-          />
-          <Route
-            path="/laporan"
-            element={
-              <Laporan
-                transactions={transactions}
-                services={services}
-              />
-            }
-          />
-          <Route
-            path="/tutup-kasir"
-            element={
-              <TutupKasir
-                transactions={transactions}
-                dailyClosings={dailyClosings}
-                setDailyClosings={setDailyClosings}
-              />
-            }
-          />
-          <Route
-            path="/struk/:id"
-            element={<ReceiptPage />}
-          />
-        </Routes>
-      </Layout>
+      {!isAuthenticated ? (
+        <LoginPage onLogin={handleLogin} />
+      ) : (
+        <Layout darkMode={darkMode} setDarkMode={setDarkMode} onLogout={handleLogout}>
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <Dashboard
+                  transactions={transactions}
+                  setTransactions={setTransactions}
+                />
+              }
+            />
+            <Route
+              path="/transaksi-baru"
+              element={
+                <TransaksiBaru
+                  transactions={transactions}
+                  setTransactions={setTransactions}
+                  customers={customers}
+                  setCustomers={setCustomers}
+                  services={services}
+                />
+              }
+            />
+            <Route
+              path="/pesanan"
+              element={
+                <Pesanan
+                  transactions={transactions}
+                  setTransactions={setTransactions}
+                  services={services}
+                />
+              }
+            />
+            <Route
+              path="/riwayat-pesanan"
+              element={
+                <RiwayatPesanan
+                  transactions={transactions}
+                  setTransactions={setTransactions}
+                  services={services}
+                />
+              }
+            />
+            <Route
+              path="/pelanggan"
+              element={
+                <DataPelanggan
+                  customers={customers}
+                  transactions={transactions}
+                />
+              }
+            />
+            <Route
+              path="/layanan"
+              element={
+                <Layanan
+                  services={services}
+                  setServices={setServices}
+                />
+              }
+            />
+            <Route
+              path="/pengaturan"
+              element={
+                <Pengaturan
+                  settings={settings}
+                  setSettings={setSettings}
+                  onBackup={handleBackup}
+                  onRestore={handleRestore}
+                  fileInputRef={fileInputRef}
+                />
+              }
+            />
+            <Route
+              path="/laporan"
+              element={
+                <Laporan
+                  transactions={transactions}
+                  services={services}
+                />
+              }
+            />
+            <Route
+              path="/tutup-kasir"
+              element={
+                <TutupKasir
+                  transactions={transactions}
+                  dailyClosings={dailyClosings}
+                  setDailyClosings={setDailyClosings}
+                />
+              }
+            />
+            <Route
+              path="/struk/:id"
+              element={<ReceiptPage />}
+            />
+          </Routes>
+        </Layout>
+      )}
 
       {/* Hidden file input for restore */}
       <input

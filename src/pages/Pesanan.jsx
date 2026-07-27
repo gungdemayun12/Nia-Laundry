@@ -266,6 +266,9 @@ export default function Pesanan({ transactions, setTransactions }) {
                     <td style={{ padding: '12px 16px', color: 'var(--text)', whiteSpace: 'nowrap', fontWeight: 500 }}>
                       {t.totalBerat} kg
                     </td>
+                    <td style={{ padding: '12px 16px', color: 'var(--text)', whiteSpace: 'nowrap', fontWeight: 600 }}>
+                      {formatRupiah(t.totalBayar)}
+                    </td>
                     <td style={{ padding: '12px 16px' }}>
                       <StatusBadge status={t.status} />
                     </td>
