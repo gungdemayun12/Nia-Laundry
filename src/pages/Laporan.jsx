@@ -97,19 +97,18 @@ export default function Laporan({ transactions, services, customers }) {
   const [minAmount, setMinAmount] = useState('');
   const [maxAmount, setMaxAmount] = useState('');
 
-  const now = useMemo(() => new Date(), []);
-
   const applyPreset = (key) => {
     setPreset(key);
+    const today = new Date(); // selalu gunakan waktu real-time saat klik
     if (key === 'today') {
-      setDateFrom(getStartOfDay(now).toISOString().split('T')[0]);
-      setDateTo(getStartOfDay(now).toISOString().split('T')[0]);
+      setDateFrom(getStartOfDay(today).toISOString().split('T')[0]);
+      setDateTo(getStartOfDay(today).toISOString().split('T')[0]);
     } else if (key === 'week') {
-      setDateFrom(getStartOfWeek(now).toISOString().split('T')[0]);
-      setDateTo(now.toISOString().split('T')[0]);
+      setDateFrom(getStartOfWeek(today).toISOString().split('T')[0]);
+      setDateTo(today.toISOString().split('T')[0]);
     } else if (key === 'month') {
-      setDateFrom(getStartOfMonth(now).toISOString().split('T')[0]);
-      setDateTo(now.toISOString().split('T')[0]);
+      setDateFrom(getStartOfMonth(today).toISOString().split('T')[0]);
+      setDateTo(today.toISOString().split('T')[0]);
     } else {
       setDateFrom('');
       setDateTo('');
@@ -166,6 +165,7 @@ export default function Laporan({ transactions, services, customers }) {
   }, [filteredTx]);
 
   const prevPeriodStats = useMemo(() => {
+    const now = new Date(); // waktu real-time saat perhitungan
     let from, to;
     if (preset === 'today') {
       const yesterday = new Date(now); yesterday.setDate(yesterday.getDate() - 1);
@@ -202,7 +202,7 @@ export default function Laporan({ transactions, services, customers }) {
       count: prev.length,
       kg: prev.reduce((s, t) => s + (t.totalBerat || 0), 0),
     };
-  }, [transactions, preset, filterStatus, filterService, filterCustomer, now]);
+  }, [transactions, preset, filterStatus, filterService, filterCustomer]);
 
   const chartData = useMemo(() => {
     const map = {};
