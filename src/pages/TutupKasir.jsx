@@ -6,13 +6,15 @@ import { Calculator, Save, CheckCircle, AlertCircle } from 'lucide-react';
 export default function TutupKasir({ transactions, dailyClosings, setDailyClosings }) {
   const [cashInDrawer, setCashInDrawer] = useState('');
 
-  // Hitung Omzet Hari Ini
+  // Hitung Omzet Hari Ini - HANYA transaksi dengan status "Diambil"
   const today = getStartOfDay(new Date());
   const todayTx = transactions.filter(
     (t) => getStartOfDay(new Date(t.tanggal)).getTime() === today.getTime()
   );
   
-  const expectedCash = todayTx.reduce((sum, t) => sum + t.totalBayar, 0);
+  // Hanya transaksi yang sudah DIAMBIL yang masuk pendapatan
+  const todayRevenueTx = todayTx.filter(t => t.status === 'Diambil');
+  const expectedCash = todayRevenueTx.reduce((sum, t) => sum + t.totalBayar, 0);
   const actualCash = parseInt(cashInDrawer) || 0;
   const difference = actualCash - expectedCash;
 
@@ -48,7 +50,7 @@ export default function TutupKasir({ transactions, dailyClosings, setDailyClosin
 
   const saveData = () => {
     const newClosing = {
-      id: `CLS-${Date.now()}`,
+      id: `CLS-${new Date().getTime()}`,
       tanggal: new Date().toISOString(),
       expectedCash,
       actualCash,
@@ -149,7 +151,7 @@ export default function TutupKasir({ transactions, dailyClosings, setDailyClosin
               Fitur Tutup Kasir membantu Anda melacak kesesuaian antara uang yang tercatat di aplikasi dengan uang nyata yang ada di laci kasir setiap penghujung hari.
             </p>
             <ul style={{ color: 'var(--text-2)', lineHeight: 1.6, paddingLeft: 20, listStyleType: 'disc' }}>
-              <li><strong>Pendapatan Sistem</strong> dihitung dari total pembayaran semua pesanan yang dibuat pada hari ini (berdasarkan tanggal).</li>
+              <li><strong>Pendapatan Sistem</strong> dihitung dari total pembayaran pesanan dengan status <strong>Diambil</strong> pada hari ini. Pesanan dengan status Proses/Selesai belum masuk pendapatan.</li>
               <li>Jika selisih bernilai <strong>Minus (-)</strong>, berarti uang fisik kurang.</li>
               <li>Jika selisih bernilai <strong>Plus (+)</strong>, berarti uang fisik lebih.</li>
             </ul>
