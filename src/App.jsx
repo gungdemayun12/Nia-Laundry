@@ -3,6 +3,7 @@ import { HashRouter, Routes, Route, useLocation, useNavigate } from 'react-route
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { DEFAULT_SERVICES, DEFAULT_SETTINGS } from './utils/constants';
 import { exportJSON, importJSON } from './utils/helpers';
+import bluetoothPrinter from './utils/bluetoothPrinter';
 import Swal from 'sweetalert2';
 
 import Layout from './components/Layout';
@@ -153,6 +154,24 @@ export default function App() {
       window.removeEventListener('click', handleActivity);
     };
   }, [isAuthenticated, handleLogout]); // Dependensi: isAuthenticated dan handleLogout
+
+  // ── Bluetooth Printer Auto Reconnect setelah refresh ──
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    
+    const savedPrinter = bluetoothPrinter.getSavedPrinter();
+    if (savedPrinter && !bluetoothPrinter.getState().isConnected) {
+      // Delay sedikit agar halaman selesai di-render dulu
+      const timer = setTimeout(() => {
+        bluetoothPrinter.autoReconnect().then((res) => {
+          if (res && res.isConnected) {
+            console.log('✅ Bluetooth printer auto-reconnect berhasil:', res.deviceName);
+          }
+        }).catch(() => {});
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isAuthenticated]);
 
   // ── Error recovery: catch unhandled errors ──
   useEffect(() => {
