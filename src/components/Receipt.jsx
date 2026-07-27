@@ -121,12 +121,8 @@ const Receipt = forwardRef(function Receipt({ transaction, settings, id }, ref) 
         </div>
       </div>
 
-      {/* Status & Estimation */}
+      {/* Estimation & Notes */}
       <div style={{ fontSize: smallSize, marginBottom: 8, paddingBottom: 8, borderBottom: '1px dashed #000' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
-          <span>Status:</span>
-          <span style={{ fontWeight: 'bold' }}>{transaction.status}</span>
-        </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
           <span>Selesai:</span>
           <span style={{ fontWeight: 'bold' }}>{formatDate(transaction.estimasiSelesai)}</span>
