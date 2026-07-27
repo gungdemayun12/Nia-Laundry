@@ -8,6 +8,7 @@ export function useBluetoothPrinter() {
   const [state, setState] = useState(() => bluetoothPrinter.getState());
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState(null);
+  const [isReconnecting, setIsReconnecting] = useState(false);
 
   useEffect(() => {
     const unsub = bluetoothPrinter.subscribe((newState) => {
@@ -15,6 +16,24 @@ export function useBluetoothPrinter() {
     });
     return unsub;
   }, []);
+
+  // Auto reconnect saat komponen mount (refresh halaman)
+  useEffect(() => {
+    const saved = bluetoothPrinter.getSavedPrinter();
+    if (saved && !state.isConnected) {
+      setIsReconnecting(true);
+      bluetoothPrinter.autoReconnect()
+        .then((result) => {
+          if (result && result.isConnected) {
+            console.log('Auto-reconnect berhasil:', result.deviceName);
+          }
+        })
+        .catch(() => {})
+        .finally(() => {
+          setIsReconnecting(false);
+        });
+    }
+  }, []); // hanya sekali saat mount
 
   const scan = useCallback(async () => {
     setIsScanning(true);
@@ -63,6 +82,7 @@ export function useBluetoothPrinter() {
   return {
     ...state,
     isScanning,
+    isReconnecting,
     error,
     scan,
     disconnect,

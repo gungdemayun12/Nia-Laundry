@@ -216,6 +216,8 @@ class BluetoothPrinterManager {
     this.deviceName = '';
     this.deviceId = '';
     this._listeners = new Set();
+    this._autoReconnecting = false;
+    this._manualDisconnect = false;
   }
 
   // Subscribe to state changes
@@ -274,6 +276,56 @@ class BluetoothPrinterManager {
   }
 
   /**
+   * Coba auto-reconnect ke printer yang sudah pernah dipairing sebelumnya.
+   * Ini dipanggil saat aplikasi dimuat / refresh halaman.
+   * Web Bluetooth tetap butuh user gesture untuk reconnect, tapi kita bisa tampilkan status dan proses reconnect otomatis.
+   */
+  async autoReconnect() {
+    const saved = this.getSavedPrinter();
+    if (!saved || !saved.name || this._autoReconnecting) return null;
+
+    // Cek apakah sebelumnya manual disconnect
+    if (localStorage.getItem('pos_bt_printer_disconnected') === 'true') {
+      return null;
+    }
+
+    this._autoReconnecting = true;
+
+    try {
+      // Coba dapatkan device yang sudah pernah dipairing
+      if (navigator.bluetooth.getDevices) {
+        const devices = await navigator.bluetooth.getDevices();
+        const matched = devices.find(d => 
+          d.name === saved.name || d.id === saved.id
+        );
+
+        if (matched) {
+          this.device = matched;
+          this.deviceName = matched.name || saved.name;
+          this.deviceId = matched.id || saved.id;
+
+          // Pasang event listener disconnect
+          this.device.addEventListener('gattserverdisconnected', () => {
+            this.isConnected = false;
+            this.writeCharacteristic = null;
+            this.server = null;
+            this._notify();
+          });
+
+          await this._connectGATT();
+          return this.getState();
+        }
+      }
+      return null;
+    } catch (err) {
+      console.warn('Auto-reconnect gagal:', err.message);
+      return null;
+    } finally {
+      this._autoReconnecting = false;
+    }
+  }
+
+  /**
    * Scan for and connect to a Bluetooth printer
    */
   async scanAndConnect() {
@@ -284,7 +336,6 @@ class BluetoothPrinterManager {
     try {
       // Request device with broad filter for thermal printers
       this.device = await navigator.bluetooth.requestDevice({
-        // Accept all devices and let user pick
         acceptAllDevices: true,
         optionalServices: PRINTER_SERVICE_UUIDS,
       });
@@ -296,7 +347,10 @@ class BluetoothPrinterManager {
       this.deviceName = this.device.name || 'Printer Bluetooth';
       this.deviceId = this.device.id;
 
-      // Listen for disconnection
+      // Hapus flag manual disconnect
+      localStorage.removeItem('pos_bt_printer_disconnected');
+
+      // Listen for disconnection - auto reconnect ketika device tiba-tiba putus
       this.device.addEventListener('gattserverdisconnected', () => {
         this.isConnected = false;
         this.writeCharacteristic = null;
@@ -408,6 +462,9 @@ class BluetoothPrinterManager {
    * Disconnect from the printer
    */
   disconnect() {
+    // Set flag bahwa ini disconnect manual (bukan karena refresh/hilang sinyal)
+    localStorage.setItem('pos_bt_printer_disconnected', 'true');
+    
     if (this.device && this.device.gatt.connected) {
       this.device.gatt.disconnect();
     }
