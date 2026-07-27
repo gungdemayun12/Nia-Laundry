@@ -123,7 +123,7 @@ export function buildReceiptBytes(transaction, settings) {
   printLine(twoColumn('Struk:', transaction.id, W));
   printLine(twoColumn('Tgl:', formatDateTimePlain(transaction.tanggal), W));
   printLine(twoColumn('Kasir:', 'Admin', W));
-  printLine(twoColumn('Plgn:', transaction.pelanggan?.nama || '-', W));
+  printLine(twoColumn('Pelanggan:', transaction.pelanggan?.nama || '-', W));
   if (transaction.pelanggan?.noHp) {
     printLine(twoColumn('HP:', transaction.pelanggan.noHp, W));
   }
@@ -160,7 +160,6 @@ export function buildReceiptBytes(transaction, settings) {
 
   printLine(dashedLine(W));
 
-  printLine(twoColumn('Status:', transaction.status, W));
   printLine(twoColumn('Selesai:', formatDatePlain(transaction.estimasiSelesai), W));
 
   if (transaction.catatan) {
