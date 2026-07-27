@@ -16,7 +16,7 @@ import {
   Bar, Line, Pie, Doughnut,
 } from 'react-chartjs-2';
 import {
-  Download, ArrowUpRight, ArrowDownRight, Printer,
+  Download, ArrowUpRight, ArrowDownRight, Printer, Search, X, Filter,
 } from 'lucide-react';
 import { formatRupiah, getStartOfDay, getStartOfWeek, getStartOfMonth, exportCSV } from '../utils/helpers';
 import jsPDF from 'jspdf';
@@ -54,6 +54,13 @@ const PIE_CHART_TYPES = [
   { key: 'doughnut', label: 'Donut', component: Doughnut },
 ];
 
+const SORT_OPTIONS = [
+  { key: 'newest', label: 'Terbaru' },
+  { key: 'oldest', label: 'Terlama' },
+  { key: 'highest', label: 'Pendapatan Tertinggi' },
+  { key: 'lowest', label: 'Pendapatan Terendah' },
+];
+
 function QuickStat({ label, value, sub, trendUp }) {
   return (
     <div className="card" style={{ padding: '16px 18px' }}>
@@ -84,7 +91,11 @@ export default function Laporan({ transactions, services, customers }) {
   const [preset, setPreset] = useState('all');
   const [filterService, setFilterService] = useState('');
   const [filterCustomer, setFilterCustomer] = useState('');
-  const [filterStatus, setFilterStatus] = useState('Diambil');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [sortBy, setSortBy] = useState('newest');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [minAmount, setMinAmount] = useState('');
+  const [maxAmount, setMaxAmount] = useState('');
 
   const now = useMemo(() => new Date(), []);
 
@@ -106,7 +117,7 @@ export default function Laporan({ transactions, services, customers }) {
   };
 
   const filteredTx = useMemo(() => {
-    return transactions.filter((t) => {
+    let result = transactions.filter((t) => {
       if (filterStatus && t.status !== filterStatus) return false;
       if (filterService && !t.items?.some(i => i.layanan === filterService)) return false;
       if (filterCustomer && t.pelanggan?.nama !== filterCustomer) return false;
@@ -117,9 +128,30 @@ export default function Laporan({ transactions, services, customers }) {
         to.setHours(23, 59, 59, 999);
         if (d > to) return false;
       }
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        const matchId = t.id?.toLowerCase().includes(q);
+        const matchCustomer = t.pelanggan?.nama?.toLowerCase().includes(q);
+        const matchPhone = t.pelanggan?.noHp?.includes(q);
+        if (!matchId && !matchCustomer && !matchPhone) return false;
+      }
+      if (minAmount && (t.totalBayar || 0) < Number(minAmount)) return false;
+      if (maxAmount && (t.totalBayar || 0) > Number(maxAmount)) return false;
       return true;
     });
-  }, [transactions, dateFrom, dateTo, filterService, filterCustomer, filterStatus]);
+
+    // Sorting
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case 'oldest': return new Date(a.tanggal) - new Date(b.tanggal);
+        case 'highest': return (b.totalBayar || 0) - (a.totalBayar || 0);
+        case 'lowest': return (a.totalBayar || 0) - (b.totalBayar || 0);
+        default: return new Date(b.tanggal) - new Date(a.tanggal);
+      }
+    });
+
+    return result;
+  }, [transactions, dateFrom, dateTo, filterService, filterCustomer, filterStatus, sortBy, searchQuery, minAmount, maxAmount]);
 
   const stats = useMemo(() => {
     const totalRevenue = filteredTx.reduce((s, t) => s + (t.totalBayar || 0), 0);
@@ -240,19 +272,23 @@ export default function Laporan({ transactions, services, customers }) {
         position: 'bottom',
         labels: {
           font: { family: "'Inter', sans-serif", size: 11 },
-          color: '#6c757d',
+          color: 'var(--text-3)',
           padding: 16,
           usePointStyle: true,
           pointStyle: 'circle',
         },
       },
       tooltip: {
-        backgroundColor: '#212529',
+        backgroundColor: 'var(--surface)',
         titleFont: { family: "'Inter', sans-serif", size: 12, weight: '600' },
         bodyFont: { family: "'Inter', sans-serif", size: 11 },
+        titleColor: 'var(--text)',
+        bodyColor: 'var(--text-2)',
         padding: 12,
         cornerRadius: 8,
         displayColors: true,
+        borderColor: 'var(--border)',
+        borderWidth: 1,
       },
     },
     scales: {
@@ -260,14 +296,15 @@ export default function Laporan({ transactions, services, customers }) {
         grid: { display: false },
         ticks: {
           font: { family: "'Inter', sans-serif", size: 11 },
-          color: '#6c757d',
+          color: 'var(--text-3)',
         },
       },
       y: {
-        grid: { color: '#f1f3f5', drawBorder: false },
+        grid: { color: 'var(--border)' },
+        drawBorder: false,
         ticks: {
           font: { family: "'Inter', sans-serif", size: 11 },
-          color: '#6c757d',
+          color: 'var(--text-3)',
           callback: (value) => `${(value / 1000).toFixed(0)}k`,
         },
       },
@@ -282,18 +319,22 @@ export default function Laporan({ transactions, services, customers }) {
         position: 'right',
         labels: {
           font: { family: "'Inter', sans-serif", size: 11 },
-          color: '#212529',
+          color: 'var(--text)',
           padding: 12,
           usePointStyle: true,
           pointStyle: 'circle',
         },
       },
       tooltip: {
-        backgroundColor: '#212529',
+        backgroundColor: 'var(--surface)',
         titleFont: { family: "'Inter', sans-serif", size: 12, weight: '600' },
         bodyFont: { family: "'Inter', sans-serif", size: 11 },
+        titleColor: 'var(--text)',
+        bodyColor: 'var(--text-2)',
         padding: 12,
         cornerRadius: 8,
+        borderColor: 'var(--border)',
+        borderWidth: 1,
       },
     },
   };
@@ -304,14 +345,14 @@ export default function Laporan({ transactions, services, customers }) {
       {
         label: 'Pendapatan',
         data: chartData.map(d => d.pendapatan),
-        backgroundColor: chartType === 'bar' ? '#212529' : 'transparent',
-        borderColor: '#212529',
+        backgroundColor: chartType === 'bar' ? 'var(--text)' : 'transparent',
+        borderColor: 'var(--text)',
         borderWidth: chartType === 'line' ? 2.5 : 0,
         fill: chartType === 'line',
         tension: 0.3,
         pointRadius: chartType === 'line' ? 4 : 0,
         pointHoverRadius: chartType === 'line' ? 6 : 0,
-        pointBackgroundColor: '#212529',
+        pointBackgroundColor: 'var(--text)',
         borderRadius: chartType === 'bar' ? 6 : 0,
       },
     ],
@@ -324,40 +365,83 @@ export default function Laporan({ transactions, services, customers }) {
         label: 'Jumlah Transaksi',
         data: serviceData.map(d => d.count),
         backgroundColor: CHART_COLORS.slice(0, serviceData.length),
-        borderColor: '#fff',
+        borderColor: 'var(--surface)',
         borderWidth: 2,
       },
     ],
   };
 
   const handleExportExcel = () => {
+    // Buat data dengan format yang lebih rapi
     const data = filteredTx.map((t) => ({
       'No. Invoice': t.id,
       Tanggal: new Date(t.tanggal).toLocaleString('id-ID'),
       Pelanggan: t.pelanggan?.nama || '-',
-      Layanan: t.items?.map((i) => i.layanan).join('; ') || '-',
+      'No. HP': t.pelanggan?.noHp || '-',
+      Layanan: t.items?.map((i) => `${i.layanan} (${i.berat}kg x ${formatRupiah(i.hargaPerKg)})`).join('; ') || '-',
       'Total Berat (kg)': t.totalBerat,
+      'Subtotal (Rp)': t.totalBayar + (t.diskon || 0),
+      'Diskon (Rp)': t.diskon || 0,
       'Total Bayar (Rp)': t.totalBayar,
       Status: t.status,
+      'Estimasi Selesai': t.estimasiSelesai ? new Date(t.estimasiSelesai).toLocaleDateString('id-ID') : '-',
     }));
+    
+    // Tambah summary row
+    data.push({});
+    data.push({ 'No. Invoice': 'RINGKASAN' });
+    data.push({ 'No. Invoice': 'Total Transaksi', 'Total Bayar (Rp)': filteredTx.length });
+    data.push({ 'No. Invoice': 'Total Pendapatan', 'Total Bayar (Rp)': stats.totalRevenue });
+    data.push({ 'No. Invoice': 'Total Berat', 'Total Berat (kg)': stats.totalKg.toFixed(1) });
+    data.push({ 'No. Invoice': 'Rata-rata / Transaksi', 'Total Bayar (Rp)': Math.round(stats.avgTransaction) });
+    
     exportCSV(data, `Laporan_Laundry_${new Date().toISOString().split('T')[0]}.csv`);
   };
 
   const handleExportPDF = () => {
     const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text('Laporan Transaksi Laundry', 14, 20);
+    
+    // Header with logo
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text('LAPORAN TRANSAKSI LAUNDRY', 14, 20);
+    
     doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
     doc.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')}`, 14, 28);
     
-    const tableColumn = ["No. Invoice", "Tanggal", "Pelanggan", "Berat", "Total", "Status"];
+    // Periode
+    let periodeText = 'Periode: ';
+    if (dateFrom && dateTo) {
+      periodeText += `${dateFrom} - ${dateTo}`;
+    } else {
+      periodeText += 'Semua Data';
+    }
+    if (filterStatus) periodeText += ` | Status: ${filterStatus}`;
+    if (filterService) periodeText += ` | Layanan: ${filterService}`;
+    doc.text(periodeText, 14, 34);
+
+    // Summary
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('RINGKASAN', 14, 42);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text(`Total Pendapatan: ${formatRupiah(stats.totalRevenue)}`, 14, 48);
+    doc.text(`Total Transaksi: ${stats.count}`, 14, 54);
+    doc.text(`Total Berat: ${stats.totalKg.toFixed(1)} kg`, 14, 60);
+    doc.text(`Rata-rata/Transaksi: ${formatRupiah(Math.round(stats.avgTransaction))}`, 14, 66);
+
+    // Table
+    const tableColumn = ['No. Invoice', 'Tanggal', 'Pelanggan', 'Layanan', 'Berat', 'Total', 'Status'];
     const tableRows = [];
 
-    filteredTx.forEach(t => {
+    filteredTx.slice(0, 50).forEach(t => {
       const rowData = [
         t.id,
         new Date(t.tanggal).toLocaleDateString('id-ID'),
         t.pelanggan?.nama || '-',
+        t.items?.map(i => i.layanan).join(', ') || '-',
         `${t.totalBerat} kg`,
         formatRupiah(t.totalBayar),
         t.status
@@ -368,12 +452,48 @@ export default function Laporan({ transactions, services, customers }) {
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
-      startY: 35,
-      theme: 'striped',
-      styles: { fontSize: 9 },
-      headStyles: { fillColor: [33, 37, 41] },
+      startY: 72,
+      theme: 'grid',
+      styles: { 
+        fontSize: 8,
+        cellPadding: 3,
+        textColor: [33, 37, 41],
+      },
+      headStyles: { 
+        fillColor: [33, 37, 41],
+        textColor: [255, 255, 255],
+        fontSize: 8,
+        fontStyle: 'bold',
+      },
+      alternateRowStyles: {
+        fillColor: [248, 249, 250],
+      },
+      foot: [[
+        { content: 'TOTAL', colSpan: 4, styles: { fontStyle: 'bold', fontSize: 9 } },
+        { content: `${stats.totalKg.toFixed(1)} kg`, styles: { fontStyle: 'bold', fontSize: 9 } },
+        { content: formatRupiah(stats.totalRevenue), styles: { fontStyle: 'bold', fontSize: 9 } },
+        { content: `${stats.count} tx`, styles: { fontStyle: 'bold', fontSize: 9 } },
+      ]],
+      footStyles: {
+        fillColor: [241, 243, 245],
+        textColor: [33, 37, 41],
+      },
     });
-    
+
+    // Footer
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(150);
+      doc.text(
+        `Halaman ${i} dari ${pageCount} | Nia Laundry POS`,
+        doc.internal.pageSize.width / 2,
+        doc.internal.pageSize.height - 10,
+        { align: 'center' }
+      );
+    }
+
     doc.save(`Laporan_Laundry_${new Date().toISOString().split('T')[0]}.pdf`);
   };
 
@@ -388,9 +508,13 @@ export default function Laporan({ transactions, services, customers }) {
     setFilterService('');
     setFilterCustomer('');
     setFilterStatus('');
+    setSearchQuery('');
+    setMinAmount('');
+    setMaxAmount('');
+    setSortBy('newest');
   };
 
-  const hasActiveFilters = dateFrom || dateTo || filterService || filterCustomer || filterStatus;
+  const hasActiveFilters = dateFrom || dateTo || filterService || filterCustomer || filterStatus || searchQuery || minAmount || maxAmount;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -422,8 +546,52 @@ export default function Laporan({ transactions, services, customers }) {
         />
       </div>
 
-      {/* Filters */}
+      {/* Filters Section */}
       <div className="card" style={{ padding: '16px 20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+          <Filter size={16} style={{ color: 'var(--text)' }} />
+          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Filter & Pencarian</span>
+          {hasActiveFilters && (
+            <button
+              onClick={clearFilters}
+              style={{
+                marginLeft: 'auto', padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border)',
+                background: 'var(--surface)', cursor: 'pointer', fontSize: 11, fontWeight: 600,
+                color: 'var(--text-3)', display: 'flex', alignItems: 'center', gap: 4,
+              }}
+            >
+              <X size={12} /> Reset
+            </button>
+          )}
+        </div>
+
+        {/* Search bar */}
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ position: 'relative' }}>
+            <Search size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)' }} />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Cari invoice, nama pelanggan, atau no. HP..."
+              className="field-input"
+              style={{ paddingLeft: 32, padding: '7px 12px 7px 32px', fontSize: 12, width: '100%' }}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                style={{
+                  position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
+                  background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)',
+                  padding: 4,
+                }}
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
+        </div>
+
         <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
           {/* Period Presets */}
           <div>
@@ -437,7 +605,7 @@ export default function Laporan({ transactions, services, customers }) {
                     padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer',
                     fontSize: 12, fontWeight: 600, transition: 'all 0.15s',
                     background: preset === p.key ? 'var(--text)' : 'transparent',
-                    color: preset === p.key ? '#fff' : 'var(--text-3)',
+                    color: preset === p.key ? 'var(--bg)' : 'var(--text-3)',
                   }}
                 >
                   {p.label}
@@ -509,7 +677,7 @@ export default function Laporan({ transactions, services, customers }) {
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
               className="field-input"
-              style={{ width: 140, padding: '6px 10px', fontSize: 12, appearance: 'none',
+              style={{ width: 130, padding: '6px 10px', fontSize: 12, appearance: 'none',
                 backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236c757d' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
                 backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center', paddingRight: 32,
               }}
@@ -521,23 +689,62 @@ export default function Laporan({ transactions, services, customers }) {
             </select>
           </div>
 
-          {/* Actions */}
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-            {hasActiveFilters && (
-              <button className="btn btn-secondary" onClick={clearFilters} style={{ padding: '7px 14px', fontSize: 12 }}>
-                Reset
-              </button>
-            )}
-              <button className="btn btn-secondary" onClick={handleExportExcel} style={{ padding: '8px 16px', fontSize: 12 }}>
-                <Download size={14} /> Excel
-              </button>
-              <button className="btn btn-secondary" onClick={handleExportPDF} style={{ padding: '8px 16px', fontSize: 12 }}>
-                <Download size={14} /> PDF
-              </button>
-              <button className="btn btn-secondary" onClick={handlePrintReport} style={{ padding: '8px 16px', fontSize: 12 }}>
-                <Printer size={14} /> Cetak
-              </button>
+          {/* Sort */}
+          <div>
+            <label className="field-label">Urutkan</label>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="field-input"
+              style={{ width: 170, padding: '6px 10px', fontSize: 12, appearance: 'none',
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236c757d' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
+                backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center', paddingRight: 32,
+              }}
+            >
+              {SORT_OPTIONS.map((o) => (
+                <option key={o.key} value={o.key}>{o.label}</option>
+              ))}
+            </select>
           </div>
+
+          {/* Range Amount */}
+          <div>
+            <label className="field-label">Min. Total (Rp)</label>
+            <input
+              type="number"
+              value={minAmount}
+              onChange={(e) => setMinAmount(e.target.value)}
+              placeholder="0"
+              className="field-input"
+              style={{ width: 110, padding: '6px 10px', fontSize: 12 }}
+            />
+          </div>
+          <div>
+            <label className="field-label">Maks. Total (Rp)</label>
+            <input
+              type="number"
+              value={maxAmount}
+              onChange={(e) => setMaxAmount(e.target.value)}
+              placeholder="999999"
+              className="field-input"
+              style={{ width: 110, padding: '6px 10px', fontSize: 12 }}
+            />
+          </div>
+
+          {/* Export Buttons - moved to separate row */}
+        </div>
+
+        {/* Export actions */}
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 14, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+          <button className="btn btn-secondary" onClick={handleExportExcel} style={{ padding: '8px 16px', fontSize: 12 }}>
+            <Download size={14} /> Export Excel
+          </button>
+          <button className="btn btn-secondary" onClick={handleExportPDF} style={{ padding: '8px 16px', fontSize: 12 }}>
+            <Download size={14} /> Export PDF
+          </button>
+          <button className="btn btn-secondary" onClick={handlePrintReport} style={{ padding: '8px 16px', fontSize: 12 }}>
+            <Printer size={14} /> Cetak
+          </button>
         </div>
       </div>
 
@@ -548,6 +755,7 @@ export default function Laporan({ transactions, services, customers }) {
             <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>Grafik Pendapatan</p>
             <p style={{ fontSize: 11, color: 'var(--text-3)' }}>
               {dateFrom && dateTo ? `${dateFrom} - ${dateTo}` : 'Semua data'} · {filteredTx.length} transaksi
+              {filterStatus && ` · Status: ${filterStatus}`}
             </p>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -557,7 +765,7 @@ export default function Laporan({ transactions, services, customers }) {
                   padding: '5px 12px', borderRadius: 7, border: 'none', cursor: 'pointer',
                   fontSize: 12, fontWeight: 600, transition: 'all 0.15s',
                   background: period === k ? 'var(--text)' : 'transparent',
-                  color: period === k ? '#fff' : 'var(--text-3)',
+                  color: period === k ? 'var(--bg)' : 'var(--text-3)',
                 }}>{l}</button>
               ))}
             </div>
@@ -567,7 +775,7 @@ export default function Laporan({ transactions, services, customers }) {
                   padding: '5px 12px', borderRadius: 7, border: 'none', cursor: 'pointer',
                   fontSize: 12, fontWeight: 600, transition: 'all 0.15s',
                   background: chartType === key ? 'var(--text)' : 'transparent',
-                  color: chartType === key ? '#fff' : 'var(--text-3)',
+                  color: chartType === key ? 'var(--bg)' : 'var(--text-3)',
                 }}>{label}</button>
               ))}
             </div>
@@ -600,7 +808,7 @@ export default function Laporan({ transactions, services, customers }) {
                   padding: '4px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
                   fontSize: 11, fontWeight: 600, transition: 'all 0.15s',
                   background: pieChartType === key ? 'var(--text)' : 'transparent',
-                  color: pieChartType === key ? '#fff' : 'var(--text-3)',
+                  color: pieChartType === key ? 'var(--bg)' : 'var(--text-3)',
                 }}>{label}</button>
               ))}
             </div>
@@ -647,7 +855,7 @@ export default function Laporan({ transactions, services, customers }) {
 
       {/* Transaction Status Breakdown */}
       <div className="card" style={{ padding: '20px 24px' }}>
-        <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>Status Transaksi</p>
+        <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>Breakdown Status Transaksi</p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }} className="status-grid">
           <div style={{ padding: '16px', borderRadius: 10, background: 'var(--surface-2)', border: '1px solid var(--border)', textAlign: 'center' }}>
             <p style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Proses</p>
@@ -659,11 +867,65 @@ export default function Laporan({ transactions, services, customers }) {
           </div>
           <div style={{ padding: '16px', borderRadius: 10, background: 'var(--surface-2)', border: '1px solid var(--border)', textAlign: 'center' }}>
             <p style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Diambil</p>
-            <p style={{ fontSize: 28, fontWeight: 800, color: 'var(--text-3)' }}>
+            <p style={{ fontSize: 28, fontWeight: 800, color: 'var(--text-2)' }}>
               {filteredTx.filter(t => t.status === 'Diambil').length}
             </p>
           </div>
         </div>
+      </div>
+
+      {/* Data Table */}
+      <div className="card" style={{ padding: '20px 24px' }}>
+        <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>Data Transaksi ({filteredTx.length})</p>
+        {filteredTx.length > 0 ? (
+          <div className="table-responsive">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Invoice</th>
+                  <th>Tanggal</th>
+                  <th>Pelanggan</th>
+                  <th>Layanan</th>
+                  <th>Berat</th>
+                  <th>Total</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredTx.map((t) => (
+                  <tr key={t.id}>
+                    <td style={{ fontWeight: 600, fontSize: 12 }}>{t.id}</td>
+                    <td style={{ fontSize: 12, color: 'var(--text-2)' }}>{new Date(t.tanggal).toLocaleDateString('id-ID')}</td>
+                    <td>{t.pelanggan?.nama || '-'}</td>
+                    <td style={{ fontSize: 12, color: 'var(--text-2)' }}>
+                      {t.items?.map(i => i.layanan).join(', ') || '-'}
+                    </td>
+                    <td style={{ fontWeight: 600 }}>{t.totalBerat} kg</td>
+                    <td style={{ fontWeight: 700 }}>{formatRupiah(t.totalBayar)}</td>
+                    <td>
+                      <span style={{
+                        padding: '3px 10px', borderRadius: 99, fontSize: 11, fontWeight: 600,
+                        background: t.status === 'Diambil' ? 'var(--green-bg)' : t.status === 'Selesai' ? 'var(--accent-bg)' : 'var(--amber-bg)',
+                        color: t.status === 'Diambil' ? 'var(--green)' : t.status === 'Selesai' ? 'var(--text)' : 'var(--amber)',
+                        border: `1px solid ${
+                          t.status === 'Diambil' ? 'var(--green-border)' : 
+                          t.status === 'Selesai' ? 'var(--accent-border)' : 
+                          'var(--amber-border)'
+                        }`,
+                      }}>
+                        {t.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div style={{ height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-3)', fontSize: 13 }}>
+            Tidak ada data transaksi
+          </div>
+        )}
       </div>
 
       <style>{`
