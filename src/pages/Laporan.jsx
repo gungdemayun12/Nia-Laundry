@@ -154,9 +154,11 @@ export default function Laporan({ transactions, services, customers }) {
   }, [transactions, dateFrom, dateTo, filterService, filterCustomer, filterStatus, sortBy, searchQuery, minAmount, maxAmount]);
 
   const stats = useMemo(() => {
-    const totalRevenue = filteredTx.reduce((s, t) => s + (t.totalBayar || 0), 0);
+    // Pendapatan hanya dari transaksi yang sudah DIAMBIL
+    const revenueTx = filteredTx.filter(t => t.status === 'Diambil');
+    const totalRevenue = revenueTx.reduce((s, t) => s + (t.totalBayar || 0), 0);
     const totalKg = filteredTx.reduce((s, t) => s + (t.totalBerat || 0), 0);
-    const avgTransaction = filteredTx.length > 0 ? totalRevenue / filteredTx.length : 0;
+    const avgTransaction = revenueTx.length > 0 ? totalRevenue / revenueTx.length : 0;
     const completedTx = filteredTx.filter(t => t.status === 'Selesai' || t.status === 'Diambil').length;
     const processTx = filteredTx.filter(t => t.status === 'Proses').length;
 
@@ -205,7 +207,9 @@ export default function Laporan({ transactions, services, customers }) {
   const chartData = useMemo(() => {
     const map = {};
 
-    filteredTx.forEach((t) => {
+    // Grafik pendapatan hanya dari transaksi yang sudah DIAMBIL
+    const revenueTx = filteredTx.filter(t => t.status === 'Diambil');
+    revenueTx.forEach((t) => {
       const d = new Date(t.tanggal);
       let key;
       if (period === 'daily') {
