@@ -54,7 +54,9 @@ export default function App() {
     return localStorage.getItem('pos_auth_logged_in') === 'true';
   });
 
-
+  // Bersihkan key-key lama dari versi sebelumnya (register flow)
+  localStorage.removeItem('pos_auth_username');
+  localStorage.removeItem('pos_auth_password');
 
   const handleLogin = () => {
     setIsAuthenticated(true);
@@ -64,11 +66,8 @@ export default function App() {
   const handleLogout = () => {
     setIsAuthenticated(false);
     localStorage.removeItem('pos_auth_logged_in');
-    localStorage.removeItem('pos_auth_username'); // Tambahkan ini
     localStorage.removeItem('pos_last_route');
-    if (window.location.hash && window.location.hash !== '#/') {
-      window.location.hash = '#/';
-    }
+    window.location.hash = '#/';
   };
 
   // Apply dark mode
